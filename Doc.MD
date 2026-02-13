@@ -56,12 +56,13 @@ Interview_with_Ai/
 | `services/` | Contains bussiness logics like Check if email exists , Hash password , Insert user in DB , Verify password |
 | `utils/` | Helper functions like hashpassword() , verify_password() etc..|
 
-📘 SubModule 1.1 – User Signup & Signin (Documentation)
-## Overview
+## 📘 SubModule 1.1 – User Signup & Signin (Documentation)
+
+### Overview
 
 When a user enters their email and password, the request flows through multiple backend layers following a clean architecture pattern.
 
-## Request Flow Architecture
+### Request Flow Architecture
 
 ```
 Client Request
@@ -79,41 +80,41 @@ database.py (MongoDB)
 Response back to client
 ```
 
-## Component Responsibilities
+### Component Responsibilities
 
-### 1. main.py
+#### 1. main.py
 - Creates FastAPI application instance
 - Includes authentication router: `app.include_router(auth_router)`
 - Acts as the entry point of the backend application
 
-### 2. routes/auth_routes.py
+#### 2. routes/auth_routes.py
 - Defines API endpoints: `POST /auth/signup`, `POST /auth/signin`
 - Receives validated request body from Pydantic schemas
 - Calls corresponding service functions: `create_user()`, `authenticate_user()`
 - Returns structured response
 - Handles routing only — no business logic
 
-### 3. schemas/user_schema.py
+#### 3. schemas/user_schema.py
 - Defines Pydantic models for signup/signin requests and responses
 - Validates email format and minimum password length
 - Automatically generates Swagger documentation
 
-### 4. services/auth_service.py
+#### 4. services/auth_service.py
 - **create_user()**: Checks if email exists, hashes password, inserts into MongoDB
 - **authenticate_user()**: Fetches user by email, verifies password with bcrypt, returns success or error
 - Contains core authentication logic
 
-### 5. utils/hash_utils.py
+#### 5. utils/hash_utils.py
 - **hash_password()**: Converts plain password into bcrypt hash
 - **verify_password()**: Compares input password with stored hash
 - Ensures passwords are never stored in plain text
 
-### 6. database.py
+#### 6. database.py
 - Establishes MongoDB connection
 - Creates database `interview_with_ai` and collection `users`
 - Centralizes database access
 
-### 7. config.py
+#### 7. config.py
 - Loads environment variables from `.env`
 - Centralizes configuration: MongoDB URL, database name, secret key, algorithm, token expiry
 - Ensures environment-independent architecture
