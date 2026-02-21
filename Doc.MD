@@ -119,3 +119,76 @@ Response back to client
 - Centralizes configuration: MongoDB URL, database name, secret key, algorithm, token expiry
 - Ensures environment-independent architecture
 -------------------------------------------------------------------------------------------------------------------
+#### SubModule 1.2 = JWT + Authorization + Protected Route
+
+**Goal :**
+Generate JWT token , Return token to client , Client sends token in header, Backend verifies token, Allow access to protected route
+
+Architecture Update :-
+```
+app/
+│
+├──routes/
+│   └── auth_routes.py ← Updated    
+|
+├── utils/
+│   ├── hash_utils.py
+│   ├── jwt_utils.py   ← NEW
+│  
+├── services/
+│   └── auth_service.py ← Updated
+|
+├── schemas/
+│   └── user_schema.py ← Updated    
+|
+├── dependencies/
+│   └── auth_dependency.py  ← NEW
+```
+
+### Request Flow Architecture (SubModule 1.2)
+
+```
+Client Request (Login)
+    ↓
+auth_routes.py (POST /auth/signin)
+    ↓
+auth_service.py (authenticate_user)
+    ↓
+jwt_utils.py (create_access_token)
+    ↓
+Response back to client with JWT
+
+---
+
+Client Request (Protected Route: /auth/me)
+    ↓
+auth_dependency.py (Extracts Token → verify_access_token)
+    ↓
+auth_routes.py (GET /auth/me)
+    ↓
+Response back to client
+```
+
+### Component Responsibilities
+
+#### 1. routes/auth_routes.py
+- Updated `POST /auth/signin` to return a `TokenResponse` containing the JWT token.
+- Added `GET /auth/me` as a protected route that requires a valid JWT to access.
+- Uses `Depends(get_current_user)` to enforce authorization on the protected route.
+
+#### 2. schemas/user_schema.py
+- Added `TokenResponse` model (`email`, `message`, `access_token`, `token_type`).
+- Separates login response structure from the standard signup response to include the token string.
+
+#### 3. services/auth_service.py
+- Updated `authenticate_user()` to generate a JWT token (`access_token`) upon successful password verification.
+- Returns the complete token structure to the routing layer.
+
+#### 4. utils/jwt_utils.py
+- `create_access_token()`: Generates a JWT token containing the user's email (`sub`) and an expiration time (`exp`), securely signed with the configured secret key.
+- `verify_access_token()`: Decodes the JWT, verifies its cryptographic signature and expiration, and retrieves the embedded user identity.
+
+#### 5. dependencies/auth_dependency.py
+- Initializes `HTTPBearer` security scheme.
+- Contains the reusable `get_current_user()` dependency that extracts the Bearer token from the incoming `Authorization` header, verifies it via `jwt_utils`, and returns the attached user's email.
+- Raises `401 Unauthorized` if no valid token is provided.

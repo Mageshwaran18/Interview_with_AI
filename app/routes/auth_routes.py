@@ -1,6 +1,8 @@
-from fastapi import APIRouter
-from app.schemas.user_schema import SignupRequest, SigninRequest, UserResponse
+from fastapi import APIRouter,Depends
+from app.schemas.user_schema import SignupRequest, SigninRequest, UserResponse, TokenResponse
 from app.services.auth_service import create_user, authenticate_user
+from app.dependencies.auth_dependency import get_current_user
+
 
 
 # Create router object
@@ -32,7 +34,7 @@ def signup(user: SignupRequest):
 # -----------------------------
 # Signin Endpoint
 # -----------------------------
-@router.post("/signin", response_model=UserResponse)
+@router.post("/signin", response_model=TokenResponse)
 def signin(user: SigninRequest):
     """
     API Endpoint: Login existing user
@@ -48,6 +50,19 @@ def signin(user: SigninRequest):
     """
 
     return authenticate_user(user.email, user.password)
+
+@router.get("/me")
+def get_me(current_user: str = Depends(get_current_user)):
+    """
+    Protected route.
+    
+    Only accessible if valid JWT is sent.
+    """
+
+    return {
+        "message": "You are authorized",
+        "email": current_user
+    }
 
 
 # -----------------------------
@@ -81,3 +96,18 @@ def signin(user: SigninRequest):
 #   - Contain business logic
 #   - Handle hashing
 #   - Direct DB logic
+
+# -----------------------------
+# Protected Route Example
+# -----------------------------
+
+
+
+# Flow:
+# Client → /auth/me
+# Must send Authorization header.
+#
+# FastAPI:
+#   Calls get_current_user()
+#   If valid → injects email into current_user
+#   If invalid → 401 error

@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from app.database import users_collection
 from app.utils.hash_utils import hash_password, verify_password
+from app.utils.jwt_utils import create_access_token
 
 
 # -----------------------------
@@ -72,10 +73,22 @@ def authenticate_user(email: str, password: str):
             detail="Invalid password for the given email"
         )
 
+    # -----------------------------
+    # Create JWT Token
+    # -----------------------------
+    access_token = create_access_token(
+        data={"sub": email}  # "sub" = subject (identity of user)
+    )
+
     return {
         "email": email,
-        "message": "Login successful"
+        "message": "Login successful",
+        "access_token": access_token,
+        "token_type": "bearer"
     }
+
+
+
 
 
 # -----------------------------
@@ -105,3 +118,19 @@ def authenticate_user(email: str, password: str):
 # - We never return hashed_password to client
 # - We never store plain password
 # - We use proper HTTP status codes
+
+# SubModule - 1.2
+
+# -----------------------------
+# Updated Login Flow:
+# -----------------------------
+# 1. Verify email exists
+# 2. Verify password
+# 3. Generate JWT
+# 4. Return token to client
+#
+# Client will store:
+#   access_token
+#
+# Client must send:
+#   Authorization: Bearer <access_token>

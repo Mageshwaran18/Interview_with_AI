@@ -60,3 +60,18 @@ class UserResponse(BaseModel):
 # - Swagger auto-documentation
 # - Strong typing
 # - Cleaner and safer code
+
+
+# -----------------------------
+# Login Response With Token
+# -----------------------------
+class TokenResponse(BaseModel):
+    email: EmailStr
+    message: str
+    access_token: str
+    token_type: str
+
+
+# Why separate TokenResponse?
+# Because login returns extra fields (token)
+# while signup does not.
