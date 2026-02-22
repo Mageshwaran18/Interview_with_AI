@@ -1,9 +1,25 @@
 from fastapi import FastAPI
 from app.routes.auth_routes import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Create FastAPI app instance
 app = FastAPI(title="Interview With AI Backend")
+
+# -----------------------------
+# CORS Configuration
+# -----------------------------
+origins = [
+    "http://localhost:5173",  # React frontend
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Include authentication routes
