@@ -24,6 +24,15 @@ export const getCurrentUser = (token) => {
   });
 };
 
+// ─── Phase 1: AI Chat API ───
+// Sends a message to the backend LLM proxy → Google Gemini
+export const sendChatMessage = (sessionId, prompt) => {
+  return api.post("/api/chat", {
+    session_id: sessionId,
+    prompt: prompt,
+  });
+};
+
 /*
 Why create axios instance?
 

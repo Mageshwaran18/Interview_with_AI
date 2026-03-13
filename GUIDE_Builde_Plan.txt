@@ -1,0 +1,285 @@
+
+GUIDE
+AI Collaboration Evaluation Service
+Prototype Build Plan & Technical Architecture
+
+Dept. of AI and Data Science  |  Sri Eshwar College of Engineering  |  2026
+Table of Contents
+
+1.  Project Overview  .....  3
+2.  System Architecture  .....  3
+2.1  The Three Layers  .....  3
+2.2  Data Flow Summary  .....  3
+2.3  Technology Stack Recommendation  .....  4
+3.  Step-by-Step Build Plan  .....  4
+Phase 1  Candidate Interface & LLM Proxy  (Week 1–2)  .....  4
+Phase 2  Instrumentation Layer — Building the Interaction Trace Φ  (Week 3)  .....  5
+Phase 3  Evaluation Engine — Pillar Pipelines  (Week 4–6)  .....  6
+Phase 4  Scoring Aggregation & Results Dashboard  (Week 7)  .....  9
+Phase 5  Hardening & Session Management  (Week 8)  .....  10
+4.  Complete Metric Reference  .....  11
+5.  The Interaction Trace Φ — Deep Dive  .....  12
+6.  LLM-as-Judge Design  .....  13
+7.  Task Design: Library Management System  .....  14
+8.  Key Risks & Mitigations  .....  15
+9.  Prototype Timeline Summary  .....  16
+10.  Beyond the Prototype: What Comes Next  .....  16
+1. Project Overview
+The GUIDE (Goal Decomposition, Usage Efficiency, Iteration Quality, Detection & Validation, End Result) service is a web-based candidate evaluation platform that measures how effectively a software engineering candidate can collaborate with AI models to build real software. Unlike traditional DSA-focused interviews, GUIDE captures the modern, AI-augmented workflow that defines high-performing engineering teams in 2026.
+
+The core insight is this: when a candidate sits at a GUIDE session, they are given a Monaco-based code editor, a connected LLM agent, and a well-defined task such as building a Library Management System. Every keystroke, every prompt, every code run, and every file diff is silently captured by an instrumentation layer sitting between the candidate and the AI. After the session, an automated evaluation engine converts that raw interaction trace into five pillar scores that together produce a single composite GUIDE score on a 0-100 scale.
+
+
+1.1  Scope of This Prototype
+This document covers the prototype phase, targeting the SWE (Software Engineer) role exclusively. The prototype will be a single-tenant web application with the following boundaries:
+One fixed task: Library Management System (Python or JavaScript backend)
+One LLM agent: Claude Sonnet or GPT-4o via API proxy
+One evaluator persona: Hiring Manager / Technical Recruiter
+Automated scoring for all deterministic metrics; LLM-as-Judge for qualitative ones
+A results dashboard showing per-pillar scores, candidate timeline, and red-flag indicators
+2. System Architecture
+The GUIDE platform is composed of three independently deployable layers that communicate through well-defined interfaces. Understanding this separation is critical before writing a single line of code.
+
+2.1  The Three Layers
+
+2.2  Data Flow Summary
+The data flow during a session is strictly one-directional until evaluation begins:
+Candidate types a prompt in the chat panel.
+Instrumentation Layer captures the raw prompt text + timestamp → appends to Φ.
+The prompt is forwarded (unchanged) to the LLM API proxy.
+The LLM response is captured → appended to Φ → displayed to candidate.
+Candidate edits code in Monaco. Every file save triggers a diff calculation → appended to Φ.
+Terminal commands and test run outputs are captured → appended to Φ.
+At session end, Φ is sealed and sent to the Evaluation Engine.
+Evaluation Engine outputs five pillar scores + composite Q score to dashboard.
+
+2.3  Technology Stack Recommendation
+3. Step-by-Step Build Plan
+The prototype is broken into five sequential phases. Each phase produces a testable deliverable before the next phase begins. This prevents the common trap of building everything and integrating at the end.
+
+Phase 1: Candidate Interface & LLM Proxy  (Week 1–2)
+Goal: A candidate can open a browser, see the task description, write code in Monaco, and chat with an LLM. Nothing is evaluated yet — this phase purely establishes the UI and the AI connection.
+
+Step 1.1 — Scaffold the React Application
+Run: npm create vite@latest guide-client -- --template react-ts
+Install: @monaco-editor/react, axios, socket.io-client, tailwindcss
+Create three-panel layout: Left sidebar (task requirements), Center (Monaco Editor), Right (AI chat panel)
+Hard-code the task requirements for the Library Management System in the sidebar (Book CRUD, Member management, Loan tracking, Search, Overdue detection)
+
+Step 1.2 — Embed Monaco Editor
+Mount <Editor language='python' /> with defaultValue set to a starter template
+Attach onChange handler: every edit is stored in local React state
+Attach onMount handler: save reference to the Monaco instance for later diff computation
+Enable minimap: false, fontSize: 14, theme: 'vs-dark' for comfortable use
+
+Step 1.3 — Build the AI Chat Panel
+Build a simple message thread component: user messages on the right, AI on the left
+On user send, POST the message to your backend route /api/chat
+Display a typing indicator while waiting for response
+Append the AI response to the thread on receipt
+
+Step 1.4 — FastAPI Backend with LLM Proxy Route
+Create /api/chat endpoint that receives { session_id, prompt }
+Forward the prompt to the Anthropic or OpenAI API using official SDK
+Return the text response to the frontend
+Crucially: at this stage, also log { timestamp, prompt, response, token_count } to a sessions table in the database — this is the seed of the interaction trace Φ
+
+Phase 2: Instrumentation Layer — Building the Interaction Trace Φ  (Week 3)
+Goal: Capture everything the candidate does into a structured, time-stamped event log. This log is the single source of truth for all downstream evaluation. Get this right and evaluation becomes straightforward.
+
+Step 2.1 — Define the Interaction Trace Schema
+Every event in Φ has the same envelope structure:
+
+
+Step 2.2 — Capture Code Diffs on Every Save
+On the frontend, attach Monaco onDidChangeModelContent listener
+Debounce to fire at most every 3 seconds (avoid flooding the log)
+Compute unified diff using the diff npm package (current vs previous save)
+POST the diff payload to /api/events as a CODE_SAVE event
+Store: { filename, diff_text, lines_added, lines_removed, full_snapshot }
+
+Step 2.3 — Capture Test Execution Events
+Provide a 'Run Tests' button in the UI
+On click, send the current code to the backend endpoint /api/run-tests
+Backend executes pytest (sandboxed via subprocess or Docker container) against a pre-written test suite
+Return { tests_total, tests_passed, tests_failed, output_log } to frontend
+Log the result as a TEST_RUN event in Φ
+This is also how Functional Completeness (Pillar E) is auto-computed
+
+Step 2.4 — Session Lifecycle Events
+When the hiring manager starts a session: log SESSION_START with { requirements_list, time_limit_minutes }
+When the candidate submits or time expires: log SESSION_END with { total_duration_seconds, final_code_snapshot }
+These events let the Evaluation Engine compute time-based metrics (Pre-planning Ratio, Time-to-First-Run)
+
+Phase 3: Evaluation Engine — Pillar Pipelines  (Week 4–6)
+Goal: Build the five metric pipelines that consume Φ and produce normalized pillar scores. Each pipeline is an independent Python module — build and test them one at a time.
+
+Step 3.1 — Pillar G: Goal Decomposition Pipeline
+The G pipeline runs before and just after the session begins, analyzing planning behavior.
+Pre-planning Ratio (PPR): Filter Φ for events in the first 20% of session time. Count events with no PROMPT events in that window. PPR = (time_of_first_prompt - session_start) / total_duration. Score against sweet spot 10-20%.
+Decomposition Depth Score (DDS): Define a reference DAG with nodes representing ideal subtasks (e.g., define_schema, implement_book_crud, implement_loan_logic, add_overdue_check, add_search). Use an LLM-as-Judge call: provide the candidate's first 3 prompts and ask it to extract entities and subtasks. Compute node overlap with reference DAG. DDS = overlapping_nodes / total_reference_nodes.
+Requirement Coverage (RC): After the session, run the automated test suite. RC = tests_passed / total_requirements_tests.
+Subtask Ordering Score (SOS): Examine the sequence of CODE_SAVE events. Extract which features appear in each diff. Check if dependencies are violated (e.g., auth before schema). Penalize each violation by 10 points from a starting 100.
+Aggregate G Score: weighted mean of [DDS x 0.30, PPR_normalized x 0.20, RC x 0.35, SOS x 0.15].
+
+Step 3.2 — Pillar U: Usage Efficiency Pipeline
+The U pipeline analyzes every PROMPT event in Φ.
+Prompt Specificity Score (PSS): For each prompt, make a secondary LLM call with a fixed rubric: 'Rate this prompt from 1-10 on (a) constraint clarity, (b) context richness, (c) actionability. Return JSON {score_a, score_b, score_c}.' Average across all three dimensions then across all prompts. Use temperature=0 and majority-vote across 3 calls for consistency.
+Prompts-per-Feature (PPF): Count total PROMPT events. Divide by the number of distinct features the candidate implemented (detected from code diffs and test results). Compare to benchmark range 1.5-2.5.
+Context Injection Rate (CIR): For each prompt, check if the prompt text references code identifiers (class names, function names, variable names present in the candidate's current code). CIR = prompts_with_code_reference / total_prompts. Target > 70%.
+Redundancy Penalty (RP): Compute sentence-transformer embeddings for each prompt. For consecutive prompt pairs, compute cosine similarity. If > 0.85, flag as redundant. RP = 1 - (redundant_count / total_prompts).
+Token Efficiency Ratio (TER): Sum of useful output tokens (token_out where code was accepted) divided by total input tokens across all PROMPT events.
+
+Step 3.3 — Pillar I: Iteration & Refinement Pipeline
+The I pipeline cross-references PROMPT, RESPONSE, TEST_RUN, and CODE_SAVE events.
+Error Recovery Speed (ERS): When a TEST_RUN event shows a failure, find the next TEST_RUN event that passes the same test. Count PROMPT events in between. ERS = 1 / average_turns_to_fix. Normalize against benchmark of 3 turns.
+Acceptance Rate (AR): For each RESPONSE event, look at the next CODE_SAVE event. Compare the AI-generated code to the saved code using diff. If the diff shows less than 10% change, the output was accepted as-is. AR = accepted_responses / total_responses. Score against 20-90% ideal range using a tent function (peak at 55%).
+Regression Rate (RR): After each CODE_SAVE event that follows a bug fix, re-run the relevant test suite. RR = 1 - (regressions_introduced / fixes_applied). Track via TEST_RUN event sequences.
+
+Step 3.4 — Pillar D: Detection & Validation Pipeline
+The D pipeline requires two active interventions during the session — seeded bugs and a hallucinated API.
+Bug Seeding Strategy: The starter project (provided to the candidate at session start) contains 3 intentionally seeded bugs. These are subtle: an off-by-one in a date comparison, a missing null check, and a wrong SQL join direction. These bugs are tracked in a seeded_bugs table linked to the session.
+Bug Detection Rate (BDR): At session end, check CODE_SAVE events for diffs that correct each seeded bug location. BDR = bugs_corrected / 3.
+Hallucination Catch Rate (HCR): At a random point between 15-25 minutes into the session, the LLM proxy injects a response that calls a non-existent function (e.g., db.fuzzySearchByAuthor()). Monitor subsequent CODE_SAVE events. If the candidate copies this call into their code and it appears in a TEST_RUN failure log without correction, HCR = 0. If they never use it or immediately correct it, HCR = 1.
+Time-to-First-Run (TFR): The timestamp of the first TEST_RUN event minus session_start. Lower is better. Normalize: TFR_score = max(0, 1 - (ttr_minutes / 20)) × 100.
+
+Step 3.5 — Pillar E: End Result Quality Pipeline
+The E pipeline runs entirely on the final code snapshot from the SESSION_END event.
+Functional Completeness (FC): Run the full pre-written pytest suite against the final snapshot. FC = tests_passed / total_tests.
+Code Quality Score (CQS): Run pylint on the final Python files. Extract the pylint score (0-10), then normalize: CQS = pylint_score × 10. Also run radon for cyclomatic complexity and penalize files with complexity > 10.
+Architectural Coherence (AC): Make an LLM-as-Judge call providing the full final codebase. Prompt: 'Rate 1-10 on (a) separation of concerns, (b) modularity, (c) appropriate design patterns. Return JSON with scores and brief justification.' Use temperature=0 and 3-call majority vote.
+Security Score (SS): Run Bandit (Python) on the final snapshot. Bandit produces severity/confidence ratings per issue. SS = 100 - (high_severity × 20 + medium_severity × 5 + low_severity × 1), floored at 0.
+Documentation Quality (DQ): Measure comment-to-code ratio (target > 15%). Also check for presence of docstrings on all functions/classes. DQ = (has_docstrings_ratio × 0.6) + (comment_ratio_normalized × 0.4).
+
+Phase 4: Scoring Aggregation & Results Dashboard  (Week 7)
+Goal: Combine pillar scores into a composite GUIDE score and present the results in an actionable hiring dashboard.
+
+Step 4.1 — Scoring Aggregation Service
+Create /api/sessions/{session_id}/evaluate endpoint in FastAPI
+This endpoint triggers all five pipelines sequentially (or in parallel using asyncio)
+Collect { G, U, I, D, E } scores, each normalized to 0-100
+Compute: Q = (0.20 × G) + (0.25 × U) + (0.20 × I) + (0.15 × D) + (0.20 × E)
+Store all sub-metric values and pillar scores in an evaluations table linked to the session
+Return the complete result payload to the frontend dashboard
+
+Step 4.2 — Results Dashboard UI
+The results dashboard is for hiring managers, not candidates. It should communicate at a glance.
+Radar chart showing all five pillar scores — highlights strengths and weaknesses at a glance
+Composite GUIDE Score shown as a large gauge chart (0-100 with color bands: red < 40, yellow 40-65, green > 65)
+Per-pillar expandable cards showing each sub-metric score with its benchmark comparison
+Session timeline: a horizontal timeline showing when the first prompt was sent, when tests were first run, when bugs were corrected, and when the session ended
+Red-flag indicators: automatically highlighted if AR > 90% (blind acceptance), if TFR > 20 min (never ran code early), or if HCR = 0 (failed hallucination check)
+Side-by-side view: final code quality report (pylint output, bandit issues) with severity annotations
+
+Step 4.3 — Candidate Report Card (Optional Export)
+Generate a one-page PDF summary per candidate using the stored evaluation data
+Include: composite score, pillar breakdown, top 3 strengths, top 3 areas of concern, and a hiring recommendation label (Strong Hire / Hire / No Hire based on score thresholds)
+
+Phase 5: Hardening & Session Management  (Week 8)
+Goal: Make the prototype usable in a real hiring flow by adding session management, security, and reliability.
+
+Step 5.1 — Session Lifecycle Management
+Hiring manager dashboard: create a new session → system generates a unique invite link
+Session has configurable time limit (default: 60 minutes)
+Candidate receives link, enters their name, and the session starts — no account needed
+Auto-submit on timer expiry: at T+60min, SESSION_END is logged and evaluation triggers automatically
+Session states: CREATED → IN_PROGRESS → COMPLETED → EVALUATED
+
+Step 5.2 — Sandboxing Code Execution
+Code execution (for test runs) must be sandboxed to prevent malicious code execution
+Use Docker containers with restricted network access, CPU limits, and a 10-second timeout per run
+Alternatively, use Pyodide (Python in WebAssembly) in the browser for lightweight sandboxing without a server-side execution environment
+Never execute candidate code on the host server without containerization
+
+Step 5.3 — LLM Cost Controls
+Each candidate session will make N + (3 × LLM-as-Judge calls) API requests
+Estimate: ~50 candidate prompts + ~30 Judge evaluations = ~80 API calls per session
+Implement a token budget per session (e.g., 200K tokens max) with a warning at 80%
+Cache Judge evaluations — if the same prompt is evaluated twice, return the cached score
+
+Step 5.4 — Reliability & Error Handling
+All evaluation pipelines should handle partial Φ (if the session was interrupted)
+LLM-as-Judge calls should retry up to 3 times with exponential backoff on API errors
+If a Judge call fails after retries, mark that sub-metric as 'unavailable' and reweight the pillar accordingly
+Store the full evaluation payload even when evaluation is partial — always show what was successfully computed
+
+4. Complete Metric Reference
+The following table lists every metric in the GUIDE prototype, how it is computed, the expert benchmark target, and which pipeline module computes it.
+
+5. The Interaction Trace Φ — Deep Dive
+The interaction trace Φ is the single most important design decision in the GUIDE system. Every metric ultimately derives from Φ. Getting its schema, append semantics, and query patterns right will save enormous debugging time later.
+
+5.1  Why Append-Only Matters
+Φ is designed as an append-only log, never updated after an event is written. This has two critical advantages. First, it ensures the integrity of the evaluation — a candidate or a bug cannot retroactively alter the record of what happened. Second, it means the Evaluation Engine can be re-run any number of times on the same Φ without changing the underlying data, which is essential for debugging metric pipelines and for re-evaluating if the scoring weights are updated.
+
+5.2  Key Queries the Evaluation Engine Will Run
+Time-based filtering: SELECT * FROM events WHERE session_id = X AND timestamp BETWEEN T_start AND T_start + INTERVAL '15 minutes'
+Event type filtering: SELECT * FROM events WHERE session_id = X AND event_type = 'PROMPT' ORDER BY timestamp
+Token aggregation: SELECT SUM(token_in), SUM(token_out) FROM events WHERE session_id = X
+Cross-event analysis: Join PROMPT and RESPONSE events where response_id references prompt_id to compute acceptance and recovery rates
+Feature appearance detection: SELECT payload->>'diff_text' FROM events WHERE event_type = 'CODE_SAVE' to extract which functions/classes appeared in which order
+
+5.3  Recommended PostgreSQL Schema
+
+6. LLM-as-Judge Design
+Three pillar metrics rely on an LLM-as-Judge pattern: Decomposition Depth Score (G), Prompt Specificity Score (U), and Architectural Coherence (E). Getting these Judge calls right is critical because they introduce the only non-deterministic element in the scoring pipeline.
+
+6.1  Consistency Techniques
+Temperature = 0: All Judge calls use temperature=0 to minimize output variance.
+Majority voting: Each Judge call is made 3 independent times. If scores differ, the median is taken. If the majority disagree by more than 2 points, flag for human review.
+Structured output: The Judge prompt always ends with 'Return ONLY a JSON object: {score: number, reasoning: string}'. This prevents free-text responses that are hard to parse.
+Rubric anchoring: The prompt includes explicit examples of what a score of 3, 5, 7, and 9 look like for that metric. This reduces drift across different candidate sessions.
+
+6.2  Sample PSS Judge Prompt (Pillar U)
+
+7. Task Design: Library Management System
+The task is the controlled variable of the evaluation. All candidates get the same requirements, the same starter code (with the same 3 seeded bugs), and the same time limit. This is what makes scores comparable across candidates.
+
+7.1  Requirements Given to Candidate
+The sidebar presents the following requirements as a checklist (candidates can see which requirements are tested):
+Book Management: Add, update, delete, and list books. Each book has title, author, ISBN, quantity.
+Member Management: Register, update, and remove library members. Each member has name, email, member_id.
+Loan Tracking: Check out a book to a member. Return a book. Enforce that a member cannot borrow more than 3 books simultaneously.
+Search: Search books by title (partial match) and by author (partial match).
+Overdue Detection: List all loans that are overdue (checked out more than 14 days ago and not returned).
+Error Handling: All endpoints must return meaningful error messages for invalid input (not 500 errors).
+
+7.2  Seeded Bugs in Starter Code
+The starter project provides a partially-implemented data layer with the following intentional bugs:
+Bug 1 (Off-by-one): The overdue check uses > 14 instead of >= 14, causing one-day lag in overdue detection.
+Bug 2 (Missing null check): The checkout function does not verify that the book exists before decrementing quantity, causing a KeyError on invalid ISBN.
+Bug 3 (Logic error): The 3-book limit check uses len(loans) > 3 instead of >= 3, allowing a 4th simultaneous loan.
+
+7.3  Reference DAG for Decomposition Scoring
+The reference DAG used to compute DDS (Decomposition Depth Score) has the following nodes and dependency edges:
+define_db_schema → [implement_book_crud, implement_member_crud]
+implement_book_crud → [implement_loan_crud]
+implement_member_crud → [implement_loan_crud]
+implement_loan_crud → [implement_search, implement_overdue_check, implement_borrow_limit]
+implement_search → [add_error_handling]
+implement_overdue_check → [add_error_handling]
+implement_borrow_limit → [add_error_handling]
+A candidate who identifies and sequences these 9 nodes correctly earns a perfect DDS. Each identified node that matches a reference node adds to the overlap count.
+8. Key Risks & Mitigations
+
+9. Prototype Timeline Summary
+
+
+Total prototype duration: 8 weeks with a solo developer or 5 weeks with a two-person team (one frontend, one backend/ML).
+
+10. Beyond the Prototype: What Comes Next
+The prototype described here is deliberately narrow in scope. Once the prototype is validated with real candidates, the following expansions are worth pursuing — in priority order:
+
+10.1  Empirical Validation (Most Critical)
+Run 20-30 real candidates through GUIDE sessions. After 60 and 90 days, collect manager performance ratings for those who were hired. Compute correlation between GUIDE scores and actual job performance. This transforms GUIDE from a theoretical framework into an evidence-backed hiring instrument.
+10.2  Multi-Role Expansion
+Define new reference DAGs and re-weight the pillar vector for Front End Engineer (UI/UX prompt quality), MLOps Engineer (pipeline orchestration), and Security Engineer (threat modelling with AI). Each role gets its own task and its own seeded bugs appropriate to that domain.
+10.3  Real-Time Coaching Overlay
+Add a live indicator visible only to the candidate (not the evaluator) that gently nudges when PSS is below threshold ('Your last prompt was quite general — try adding the relevant function signature as context') or when 20 minutes pass without a test run ('Consider running the test suite to validate your progress').
+10.4  Prompt Pattern Classification
+Extend the U pipeline to classify each prompt by technique: zero-shot, chain-of-thought, role-setting, few-shot, or constraint-injection. Compute a Prompt Technique Diversity Index (PTDI) and reward candidates who intelligently vary their approach rather than relying on a single pattern.
+
+
+
+GUIDE — AI Collaboration Evaluation Service
+Prototype Build Plan  |  Dept. of AI & Data Science  |  Sri Eshwar College of Engineering  |  2026

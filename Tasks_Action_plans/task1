@@ -1,0 +1,35 @@
+# GUIDE Project — Phase 1: Candidate Interface & LLM Proxy
+
+## Phase 1 Steps
+
+- [x] **Step 1.1 — Scaffold the React Application**
+  - [x] Install new deps: `@monaco-editor/react`, `tailwindcss`
+  - [x] Create three-panel layout: Left sidebar (task), Center (Monaco), Right (AI chat)
+  - [x] Hard-code Library Management System requirements in sidebar
+
+- [x] **Step 1.2 — Embed Monaco Editor**
+  - [x] Mount `<Editor>` with Python language and dark theme
+  - [x] `onChange` handler to store code in React state
+  - [x] `onMount` handler to save Monaco instance reference
+  - [x] Configure: minimap off, fontSize 14, vs-dark theme
+
+- [x] **Step 1.3 — Build the AI Chat Panel**
+  - [x] Message thread component (user right, AI left)
+  - [x] Input box with send button
+  - [x] POST to `/api/chat` on send
+  - [x] Typing indicator while waiting
+  - [x] Append AI response to thread
+
+- [x] **Step 1.4 — FastAPI Backend with LLM Proxy Route**
+  - [x] Add Gemini/OpenAI API key to [.env](file:///d:/Project/Final_Year_Project/Interview_with_AI/.env) and [config.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/config.py)
+  - [x] Create `/api/chat` endpoint accepting `{ session_id, prompt }`
+  - [x] Forward prompt to LLM API (Google Gemini)
+  - [x] Log `{ timestamp, prompt, response, token_count }` to MongoDB `sessions` collection
+  - [x] Return text response to frontend
+
+- [x] **New route + CORS updates in [main.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/main.py)**
+
+- [x] **Verification**
+  - [x] Backend: Test `/api/chat` endpoint via Swagger UI
+  - [x] Frontend: Verify 3-panel layout renders correctly in browser
+  - [x] Integration: Send a message from chat panel → receive AI response

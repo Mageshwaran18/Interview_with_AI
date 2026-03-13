@@ -13,6 +13,11 @@ db = client[settings.DATABASE_NAME]
 # Collection is like a table in SQL
 users_collection = db["users"]
 
+# Access (or automatically create) the "sessions" collection
+# This stores every AI chat interaction (prompt, response, tokens)
+# This is the seed of the Interaction Trace Φ (Phase 2 will expand this)
+sessions_collection = db["sessions"]
+
 
 # Database flow:
 # .env → config.py → settings → MongoClient → Database → Collection
