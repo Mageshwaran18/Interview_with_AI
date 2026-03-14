@@ -53,6 +53,32 @@ export const runTests = (sessionId, code) => {
   });
 };
 
+// ─── Phase 4: Dashboard API ───
+// Get aggregate statistics across all evaluated sessions
+export const getDashboardStats = () => {
+  return api.get("/api/dashboard/stats");
+};
+
+// Get ranked sessions with sorting
+export const getSessionRankings = (limit = 50, sortBy = "composite_q_score", order = "desc") => {
+  return api.get(`/api/dashboard/rankings?limit=${limit}&sort_by=${sortBy}&order=${order}`);
+};
+
+// Get detailed evaluation for a specific session
+export const getSessionDetail = (sessionId) => {
+  return api.get(`/api/dashboard/session/${sessionId}`);
+};
+
+// Get score trend data for chart visualization
+export const getScoreTrends = (limit = 20) => {
+  return api.get(`/api/dashboard/trends?limit=${limit}`);
+};
+
+// Trigger evaluation pipeline for a session
+export const triggerEvaluation = (sessionId) => {
+  return api.post(`/api/evaluate/${sessionId}`);
+};
+
 /*
 Why create axios instance?
 

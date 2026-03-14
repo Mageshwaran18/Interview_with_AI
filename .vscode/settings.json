@@ -3,6 +3,10 @@
         "/^python -m uvicorn app\\.main:app --reload --port 8000$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^IAI\\\\Scripts\\\\activate ; python -c \"import app\\.services\\.dashboard_service; print\\('✓ Dashboard service imports successfully'\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

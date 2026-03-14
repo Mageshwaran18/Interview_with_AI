@@ -1,0 +1,210 @@
+# Phase 4: Scoring Aggregation & Results Dashboard
+
+Phase 4 consumes the evaluation results produced by Phase 3's 5-pillar GUIDE engine and presents them in a stunning, professional Results Dashboard. This includes backend aggregation APIs and a feature-rich frontend visualization with radar charts, metric breakdowns, session ranking, and score trends.
+
+## Proposed Changes
+
+### Backend — Dashboard API Layer
+
+---
+
+#### [NEW] [dashboard_schema.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/schemas/dashboard_schema.py)
+
+Pydantic models for dashboard-specific API responses:
+
+- **`SessionSummary`** — Lightweight session card: `session_id`, `composite_q_score`, `pillar_scores` dict, `created_at`, `duration_minutes`, `total_events`
+- **`DashboardStats`** — Aggregate statistics: `total_sessions`, `average_q_score`, `highest_q_score`, `lowest_q_score`, `pillar_averages` dict, `score_distribution` (histogram buckets)
+- **`RankingEntry`** — Ranking row: `rank`, `session_id`, `composite_q_score`, `pillar_scores`, `created_at`
+- **`DashboardResponse`** — API envelope with `stats`, `recent_sessions`, `rankings`
+
+---
+
+#### [NEW] [dashboard_service.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/services/dashboard_service.py)
+
+Business logic for aggregation and scoring:
+
+- **`get_dashboard_stats()`** — MongoDB aggregation pipeline to compute: total sessions, average/max/min Q scores, average per-pillar scores, score distribution buckets (0-20, 20-40, 40-60, 60-80, 80-100)
+- **`get_session_rankings(limit, sort_by, order)`** — Sorted evaluations with rank numbering, supporting sort by `composite_q_score` or any pillar score
+- **`get_session_detail(session_id)`** — Full evaluation detail for a single session including all 19 metrics, pillar breakdowns, and session metadata
+- **`get_score_trends(limit)`** — Chronological session scores for trend visualization
+
+---
+
+#### [NEW] [dashboard_routes.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/routes/dashboard_routes.py)
+
+API endpoints:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/dashboard/stats` | GET | Get aggregate stats |
+| `/api/dashboard/rankings` | GET | Get ranked sessions (query params: `limit`, `sort_by`, `order`) |
+| `/api/dashboard/session/{session_id}` | GET | Get detailed breakdown for one session |
+| `/api/dashboard/trends` | GET | Get score history for trend chart |
+
+---
+
+#### [MODIFY] [main.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/main.py)
+
+- Import and register the new `dashboard_router`
+
+---
+
+### Frontend — Results Dashboard
+
+---
+
+#### [MODIFY] [api.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx)
+
+Add Phase 4 API functions:
+
+```javascript
+// ─── Phase 4: Dashboard API ───
+export const getDashboardStats = () => api.get("/api/dashboard/stats");
+export const getSessionRankings = (limit = 50, sortBy = "composite_q_score", order = "desc") =>
+  api.get(`/api/dashboard/rankings?limit=${limit}&sort_by=${sortBy}&order=${order}`);
+export const getSessionDetail = (sessionId) => api.get(`/api/dashboard/session/${sessionId}`);
+export const getScoreTrends = (limit = 20) => api.get(`/api/dashboard/trends?limit=${limit}`);
+```
+
+---
+
+#### [NEW] [ResultsDashboard.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/ResultsDashboard.jsx)
+
+Main dashboard page with 4 sections:
+
+1. **Stats Overview Bar** — Cards showing total sessions, average Q score, highest/lowest, with animated counters
+2. **Score Radar Chart** — Canvas-rendered 5-axis radar chart displaying G/U/I/D/E pillar scores for selected session
+3. **Session Detail Panel** — When a session is selected, show full metric breakdown with animated pill badges
+4. **Session Ranking Table** — Sortable table with rank, session ID, Q score, per-pillar scores, visual bar indicators
+
+The page supports two modes:
+- **Overview mode** (`/results`) — Stats + rankings table
+- **Session detail mode** (`/results/:sessionId`) — Full breakdown for a specific session + radar chart
+
+---
+
+#### [NEW] [ResultsDashboard.css](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/ResultsDashboard.css)
+
+Premium dark-theme styling consistent with the existing GuidePage design:
+
+- GitHub-inspired dark palette (`#0d1117`, `#161b22`, `#e6edf3`)
+- Glassmorphism stat cards with `backdrop-filter: blur`
+- Gradient accents (`#58a6ff → #a371f7`) for score indicators
+- Smooth hover transitions and micro-animations
+- Responsive grid layouts for stat cards
+- Color-coded score badges (green for 80+, yellow for 60-80, red for < 60)
+
+---
+
+#### [NEW] [ScoreRadarChart.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/ScoreRadarChart.jsx)
+
+Pure Canvas-based (no external dependencies) radar/spider chart:
+
+- 5 axes: G, U, I, D, E with labels
+- Concentric guide levels (20, 40, 60, 80, 100)
+- Filled polygon with gradient fill and glow effect
+- Animated draw-in on mount using `requestAnimationFrame`
+- Responsive sizing
+
+---
+
+#### [NEW] [ScoreBreakdown.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/ScoreBreakdown.jsx)
+
+Detailed metric breakdown component:
+
+- 5 collapsible pillar sections (G, U, I, D, E)
+- Each pillar shows its weighted score + all sub-metrics
+- Animated score bars with gradient fills
+- Color-coded severity (green/yellow/red)
+- Pill badges for each metric name
+
+---
+
+#### [NEW] [SessionRankingTable.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/SessionRankingTable.jsx)
+
+Sortable ranking table:
+
+- Columns: Rank, Session ID, Q Score, G, U, I, D, E, Date
+- Click column header to sort (asc/desc toggle)
+- Visual score bars in each cell
+- Row click navigates to session detail view
+- Pagination support
+
+---
+
+#### [NEW] [ScoreTrendChart.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/ScoreTrendChart.jsx)
+
+Pure Canvas line chart showing Q score over time:
+
+- X-axis: session timestamps
+- Y-axis: composite Q score (0-100)
+- Animated line drawing
+- Hover tooltip with session details
+- Grid lines and axis labels
+
+---
+
+#### [MODIFY] [App.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/App.jsx)
+
+Add routes:
+
+```jsx
+import ResultsDashboard from "./pages/ResultsDashboard";
+
+// Add inside <Routes>:
+<Route path="/results" element={<ResultsDashboard />} />
+<Route path="/results/:sessionId" element={<ResultsDashboard />} />
+```
+
+---
+
+#### [MODIFY] [GuidePage.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/GuidePage.jsx)
+
+- After session ends (submit/timeout), show a "View Results" button that navigates to `/results/{sessionId}`
+
+---
+
+#### [MODIFY] [Dashboard.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/Dashboard.jsx)
+
+- Add a "View All Results" navigation link/button to `/results`
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+**Backend API verification via HTTP:**
+
+```bash
+# 1. Start backend server
+cd d:\Project\Final_Year_Project\Interview_with_AI
+IAI\Scripts\activate
+uvicorn app.main:app --reload
+
+# 2. Test dashboard stats endpoint
+curl http://127.0.0.1:8000/api/dashboard/stats
+
+# 3. Test rankings endpoint
+curl "http://127.0.0.1:8000/api/dashboard/rankings?limit=10&sort_by=composite_q_score&order=desc"
+
+# 4. Test trends endpoint
+curl http://127.0.0.1:8000/api/dashboard/trends?limit=20
+
+# 5. Verify endpoints appear in Swagger UI
+# Open: http://127.0.0.1:8000/docs
+```
+
+### Manual Verification
+
+**Frontend UI testing:**
+
+1. Start both backend and frontend servers
+2. Navigate to `http://localhost:5174/results`
+3. Verify stat cards appear (may show 0 values if no evaluations exist yet)
+4. Verify ranking table renders (empty state if no data)
+5. If evaluations exist, click a session row → verify detail view loads
+6. Verify radar chart draws correctly with 5 axes
+7. Verify metric breakdown shows all pillar sub-metrics
+8. Verify navigation: Dashboard page has "View Results" link → navigates to `/results`
+9. Verify dark theme consistency with GuidePage

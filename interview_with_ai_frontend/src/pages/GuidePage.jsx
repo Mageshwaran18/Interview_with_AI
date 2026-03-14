@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import TaskSidebar from "../components/TaskSidebar";
 import CodeEditor from "../components/CodeEditor";
 import ChatPanel from "../components/ChatPanel";
 import TestPanel from "../components/TestPanel";
-import { sendEvent } from "../services/api";
+import { sendEvent, triggerEvaluation } from "../services/api";
 import "./GuidePage.css";
 
 /*
@@ -20,6 +21,7 @@ import "./GuidePage.css";
 const SESSION_DURATION_SECONDS = 60 * 60; // 60 minutes
 
 function GuidePage() {
+  const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [sessionId] = useState(() => {
     return "session_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
@@ -60,6 +62,10 @@ function GuidePage() {
         await sendEvent(sessionId, "SESSION_END", {
           reason: reason,
         });
+        // Trigger evaluation pipeline
+        triggerEvaluation(sessionId).catch((err) =>
+          console.warn("Auto-evaluation failed:", err)
+        );
       } catch (error) {
         console.warn("Failed to log SESSION_END:", error);
       }
@@ -138,7 +144,17 @@ function GuidePage() {
               📤 Submit
             </button>
           )}
-          {!sessionActive && <span className="session-ended-badge">Session Ended</span>}
+          {!sessionActive && (
+            <>
+              <span className="session-ended-badge">Session Ended</span>
+              <button
+                className="view-results-btn"
+                onClick={() => navigate(`/results/${sessionId}`)}
+              >
+                📊 View Results
+              </button>
+            </>
+          )}
           <button
             className="panel-toggle-btn right-toggle"
             onClick={() => setRightPanelOpen(!rightPanelOpen)}

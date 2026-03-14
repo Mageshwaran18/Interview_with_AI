@@ -691,3 +691,23 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* ─── Phase 4: View Results Button ─── */
+.view-results-btn {
+  background: linear-gradient(135deg, #58a6ff, #a371f7);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: fadeIn 0.5s ease;
+}
+
+.view-results-btn:hover {
+  box-shadow: 0 0 16px rgba(88, 166, 255, 0.4);
+  transform: scale(1.05);
+}
+
