@@ -195,10 +195,11 @@
   gap: 10px;
   padding: 10px;
   margin-bottom: 6px;
-  border-radius: 8px;
+  border-radius: 8px 8px 0 0;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  align-items: flex-start;
 }
 
 .requirement-card:hover {
@@ -218,6 +219,19 @@
   font-size: 18px;
   flex-shrink: 0;
   margin-top: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.requirement-checkbox:hover {
+  transform: scale(1.15);
+}
+
+.requirement-checkbox:active {
+  transform: scale(0.95);
 }
 
 .requirement-content {
@@ -236,6 +250,61 @@
   color: #8b949e;
   margin: 0;
   line-height: 1.4;
+}
+
+/* ─── Expandable Details Section ─── */
+.requirement-item {
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  overflow: hidden;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.requirement-expand-icon {
+  font-size: 12px;
+  color: #8b949e;
+  flex-shrink: 0;
+  margin-top: 4px;
+  transition: transform 0.2s ease;
+}
+
+.requirement-details {
+  background: rgba(22, 27, 34, 0.8);
+  border-top: 1px solid #21262d;
+  border-radius: 0 0 8px 8px;
+  padding: 12px 10px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.details-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item {
+  font-size: 10px;
+  color: #58a6ff;
+  margin: 0;
+  padding-left: 0;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
 }
 
 /* ─── Code Editor Styles ─── */
