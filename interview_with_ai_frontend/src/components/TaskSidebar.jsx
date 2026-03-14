@@ -13,85 +13,68 @@ import { useState } from "react";
  - CSS classes for styling
 */
 
-// These are the requirements from the GUIDE document (Section 7.1)
-// Each requirement is what the candidate must implement
+// Simplified requirements with CRUD operations for the Library Management System
 const REQUIREMENTS = [
+  {
+    id: "student-mgmt",
+    title: "Student Management",
+    description: "Create student registration and login functions.",
+    details: [
+      "registerStudent(name, email, password)",
+      "loginStudent(email, password)",
+    ],
+  },
   {
     id: "book-mgmt",
     title: "Book Management",
-    description: "Add, update, delete, and list books. Each book has title, author, ISBN, quantity.",
+    description: "Implement CRUD operations for books.",
     details: [
-      "📌 Create a Book class with attributes: title, author, ISBN, quantity",
-      "📌 Implement add_book(isbn, title, author, quantity) method",
-      "📌 Implement update_book(isbn, quantity) to update stock",
-      "📌 Implement delete_book(isbn) to remove books",
-      "📌 Implement list_books() to return all books",
-      "📌 Validate that ISBN is unique for each book",
-    ],
-  },
-  {
-    id: "member-mgmt",
-    title: "Member Management",
-    description: "Register, update, and remove library members. Each member has name, email, member_id.",
-    details: [
-      "📌 Create a Member class with attributes: member_id, name, email",
-      "📌 Implement register_member(name, email) method",
-      "📌 Generate unique member_id automatically",
-      "📌 Implement update_member(member_id, name, email)",
-      "📌 Implement remove_member(member_id) method",
-      "📌 Ensure member_id is unique (primary key)",
-    ],
-  },
-  {
-    id: "loan-tracking",
-    title: "Loan Tracking",
-    description: "Check out a book to a member. Return a book. Max 3 books per member.",
-    details: [
-      "📌 Create a Loan class storing: book_isbn, member_id, checkout_date",
-      "📌 Implement checkout_book(member_id, isbn) method",
-      "📌 Check that member hasn't borrowed 3+ books already",
-      "📌 Decrease book quantity when checked out",
-      "📌 Implement return_book(member_id, isbn) method",
-      "📌 Increase book quantity when returned",
+      "addBook(title, author, isbn, copies)",
+      "removeBook(bookId)",
+      "updateBook(bookId, details)",
+      "getBook(bookId)",
+      "getAllBooks()",
     ],
   },
   {
     id: "search",
-    title: "Search",
-    description: "Search books by title (partial match) and by author (partial match).",
+    title: "Search & Discovery",
+    description: "Search functionality for books.",
     details: [
-      "📌 Implement search_by_title(partial_title) -> List[Book]",
-      "📌 Use case-insensitive partial matching",
-      "📌 Return all books whose title contains the search string",
-      "📌 Implement search_by_author(partial_author) -> List[Book]",
-      "📌 Use case-insensitive partial matching",
-      "📌 Return empty list if no matches found",
+      "searchBookByTitle(title)",
     ],
   },
   {
-    id: "overdue",
-    title: "Overdue Detection",
-    description: "List all loans overdue (checked out > 14 days ago and not returned).",
+    id: "borrowing",
+    title: "Borrowing System",
+    description: "Manage book borrowing operations.",
     details: [
-      "📌 Store checkout_date in Loan objects (use datetime.now())",
-      "📌 Implement list_overdue_loans() -> List[Loan]",
-      "📌 Calculate days since checkout using datetime",
-      "📌 Return loans where days_elapsed > 14 AND status = 'active'",
-      "📌 Include member name, book title, and checkout date in output",
-      "📌 Sort by overdue days (oldest first)",
+      "getBorrowedBooks(studentId)",
     ],
   },
   {
-    id: "error-handling",
-    title: "Error Handling",
-    description: "All endpoints must return meaningful error messages for invalid input.",
+    id: "history",
+    title: "History & Records",
+    description: "Track student borrowing history.",
     details: [
-      "📌 Raise ValueError for invalid ISBN or empty strings",
-      "📌 Raise ValueError if book not found or out of stock",
-      "📌 Raise ValueError if member not found or invalid",
-      "📌 Raise ValueError if trying to checkout > 3 books",
-      "📌 Raise ValueError for duplicate ISBN or member_id",
-      "📌 Always include descriptive messages in exceptions",
+      "getStudentBorrowHistory(studentId)",
+    ],
+  },
+  {
+    id: "fine-mgmt",
+    title: "Fine Management",
+    description: "Calculate and manage library fines.",
+    details: [
+      "calculateFine(studentId, bookId)",
+      "payFine(studentId, amount)",
+    ],
+  },
+  {
+    id: "analytics",
+    title: "Analytics & Stats",
+    description: "Generate library statistics.",
+    details: [
+      "getLibraryStats()",
     ],
   },
 ];

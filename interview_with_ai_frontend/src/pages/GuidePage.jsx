@@ -72,12 +72,13 @@ function GuidePage() {
     // Log SESSION_START event
     sendEvent(sessionId, "SESSION_START", {
       requirements_list: [
+        "Student Management",
         "Book Management",
-        "Member Management",
-        "Loan Tracking",
-        "Search",
-        "Overdue Detection",
-        "Error Handling",
+        "Search & Discovery",
+        "Borrowing System",
+        "History & Records",
+        "Fine Management",
+        "Analytics & Stats",
       ],
       time_limit_minutes: 60,
     }).catch((err) => console.warn("Failed to log SESSION_START:", err));
