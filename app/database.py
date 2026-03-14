@@ -18,6 +18,17 @@ users_collection = db["users"]
 # This is the seed of the Interaction Trace Φ (Phase 2 will expand this)
 sessions_collection = db["sessions"]
 
+# ─── Phase 2: Interaction Trace Φ ───
+# The events collection is the CORE of the instrumentation layer.
+# Every action (prompt, code save, test run, session events) is logged here.
+# This is an APPEND-ONLY log — events are never updated after writing.
+events_collection = db["events"]
+
+# ─── Phase 3: Evaluation Results ───
+# Stores the computed GUIDE scores for each session.
+# Each document contains all 5 pillar scores + composite Q score.
+evaluations_collection = db["evaluations"]
+
 
 # Database flow:
 # .env → config.py → settings → MongoClient → Database → Collection

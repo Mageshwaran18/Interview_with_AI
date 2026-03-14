@@ -33,6 +33,26 @@ export const sendChatMessage = (sessionId, prompt) => {
   });
 };
 
+// ─── Phase 2: Event Logging API ───
+// Logs any event to the Interaction Trace Φ
+// Events: CODE_SAVE, TEST_RUN, SESSION_START, SESSION_END
+export const sendEvent = (sessionId, eventType, payload) => {
+  return api.post("/api/events", {
+    session_id: sessionId,
+    event_type: eventType,
+    payload: payload,
+  });
+};
+
+// ─── Phase 2: Test Execution API ───
+// Sends candidate code to be tested against the pre-written test suite
+export const runTests = (sessionId, code) => {
+  return api.post("/api/run-tests", {
+    session_id: sessionId,
+    code: code,
+  });
+};
+
 /*
 Why create axios instance?
 

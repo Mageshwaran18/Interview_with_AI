@@ -1,0 +1,57 @@
+GUIDE Project — Phase 3: Evaluation Engine (Pillar Pipelines)
+Phase 3 Steps
+ Step 3.0 — Evaluation Infrastructure
+
+ Create app/evaluation/ package with 
+init
+.py
+ Create evaluation_schema.py — Pydantic models for evaluation results
+ Create evaluations_collection in 
+database.py
+ Create evaluation_service.py — orchestrates all 5 pipelines
+ Step 3.1 — Pillar G: Goal Decomposition Pipeline
+
+ Create pillar_g.py with compute_g_score(session_id)
+ Pre-Planning Ratio (PPR) — deterministic
+ Requirement Coverage (RC) — from TEST_RUN events
+ Subtask Ordering Score (SOS) — from CODE_SAVE diffs
+ Decomposition Depth Score (DDS) — LLM-as-Judge
+ Aggregate G score with weights
+ Step 3.2 — Pillar U: Usage Efficiency Pipeline
+
+ Create pillar_u.py with compute_u_score(session_id)
+ Prompt Specificity Score (PSS) — LLM-as-Judge
+ Prompts-per-Feature (PPF) — deterministic
+ Context Injection Rate (CIR) — deterministic
+ Redundancy Penalty (RP) — similarity check
+ Token Efficiency Ratio (TER) — deterministic
+ Step 3.3 — Pillar I: Iteration & Refinement Pipeline
+
+ Create pillar_i.py with compute_i_score(session_id)
+ Error Recovery Speed (ERS) — from TEST_RUN sequences
+ Acceptance Rate (AR) — diff RESPONSE vs CODE_SAVE
+ Regression Rate (RR) — from TEST_RUN sequences
+ Step 3.4 — Pillar D: Detection & Validation Pipeline
+
+ Create pillar_d.py with compute_d_score(session_id)
+ Time-to-First-Run (TFR) — deterministic
+ Bug Detection Rate (BDR) — from CODE_SAVE events
+ Hallucination Catch Rate (HCR) — from CODE_SAVE events
+ Step 3.5 — Pillar E: End Result Quality Pipeline
+
+ Create pillar_e.py with compute_e_score(session_id)
+ Functional Completeness (FC) — from final TEST_RUN
+ Code Quality Score (CQS) — pylint analysis
+ Documentation Quality (DQ) — comment/docstring ratio
+ Architectural Coherence (AC) — LLM-as-Judge
+ Step 3.6 — Evaluation API Route
+
+ Create evaluation_routes.py with POST /api/evaluate/{session_id}
+ Register route in 
+main.py
+ End-to-end test with a sample session
+ Verification
+
+ Test each pipeline independently
+ Test full evaluation flow
+ Verify scores stored in MongoDB

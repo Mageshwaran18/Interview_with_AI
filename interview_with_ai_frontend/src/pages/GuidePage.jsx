@@ -1,39 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import TaskSidebar from "../components/TaskSidebar";
 import CodeEditor from "../components/CodeEditor";
 import ChatPanel from "../components/ChatPanel";
+import TestPanel from "../components/TestPanel";
+import { sendEvent } from "../services/api";
 import "./GuidePage.css";
 
 /*
- ─── GuidePage Component ───
+ ─── GuidePage Component (Phase 2 Update) ───
  
- 📚 What this does:
- This is the MAIN page of Phase 1 — the candidate's workspace.
- It assembles the 3-panel layout:
-   [Left: Task Requirements] [Center: Code Editor] [Right: AI Chat]
- 
- 🧠 What you'll learn:
- - Component composition (combining smaller components into a page)
- - "Lifting state up" (code state lives HERE and is passed to children)
- - CSS Grid for complex layouts
- - Generating unique IDs
- 
- 💡 Key Concept: Lifting State Up
- The code state lives in GuidePage (the parent), not in CodeEditor (the child).
- Why? Because later (Phase 2), we'll need the code value in OTHER components
- too (like for computing diffs). By keeping state in the parent, any child
- can access it through props.
+ 📚 What's new in Phase 2:
+ - Working countdown timer (60:00 → 0:00)
+ - SESSION_START event logged on mount
+ - SESSION_END event logged on submit or timer expiry
+ - TestPanel integrated into the editor area
+ - sessionId passed to CodeEditor for diff logging
 */
 
-function GuidePage() {
-  // The candidate's code — starts empty, CodeEditor will fill in the starter template
-  const [code, setCode] = useState("");
+const SESSION_DURATION_SECONDS = 60 * 60; // 60 minutes
 
-  // Generate a simple session ID for this coding session
-  // In Phase 5, this will come from the hiring manager's dashboard
+function GuidePage() {
+  const [code, setCode] = useState("");
   const [sessionId] = useState(() => {
     return "session_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
   });
+
+  // ─── Timer State ───
+  const [timeRemaining, setTimeRemaining] = useState(SESSION_DURATION_SECONDS);
+  const [sessionActive, setSessionActive] = useState(true);
+  const timerRef = useRef(null);
+  const sessionActiveRef = useRef(true); // Ref mirror for callbacks
+
+  // Format seconds → "MM:SS"
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+  // ─── End Session (uses refs to avoid stale closures) ───
+  const endSession = useCallback(
+    async (reason) => {
+      if (!sessionActiveRef.current) return;
+      sessionActiveRef.current = false;
+      setSessionActive(false);
+
+      // Stop the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Log SESSION_END event
+      try {
+        await sendEvent(sessionId, "SESSION_END", {
+          reason: reason,
+        });
+      } catch (error) {
+        console.warn("Failed to log SESSION_END:", error);
+      }
+    },
+    [sessionId]
+  );
+
+  // ─── Session Start + Timer (runs ONCE on mount) ───
+  useEffect(() => {
+    // Log SESSION_START event
+    sendEvent(sessionId, "SESSION_START", {
+      requirements_list: [
+        "Book Management",
+        "Member Management",
+        "Loan Tracking",
+        "Search",
+        "Overdue Detection",
+        "Error Handling",
+      ],
+      time_limit_minutes: 60,
+    }).catch((err) => console.warn("Failed to log SESSION_START:", err));
+
+    // Start the countdown timer
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          endSession("timer_expired");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Cleanup on unmount
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array — runs only once
+
+  // Timer warning: red when < 5 minutes
+  const isTimerWarning = timeRemaining < 300;
 
   return (
     <div className="guide-page">
@@ -46,7 +110,15 @@ function GuidePage() {
         </div>
         <div className="topbar-right">
           <span className="topbar-session">Session: {sessionId.slice(0, 20)}...</span>
-          <span className="topbar-timer">⏱️ 60:00</span>
+          <span className={`topbar-timer ${isTimerWarning ? "timer-warning" : ""}`}>
+            ⏱️ {formatTime(timeRemaining)}
+          </span>
+          {sessionActive && (
+            <button className="submit-btn" onClick={() => endSession("submitted")}>
+              📤 Submit
+            </button>
+          )}
+          {!sessionActive && <span className="session-ended-badge">Session Ended</span>}
         </div>
       </header>
 
@@ -57,9 +129,10 @@ function GuidePage() {
           <TaskSidebar />
         </aside>
 
-        {/* Center Panel: Monaco Code Editor */}
+        {/* Center Panel: Code Editor + Test Panel */}
         <section className="panel panel-center">
-          <CodeEditor code={code} onCodeChange={setCode} />
+          <CodeEditor code={code} onCodeChange={setCode} sessionId={sessionId} />
+          <TestPanel sessionId={sessionId} code={code} />
         </section>
 
         {/* Right Panel: AI Chat */}

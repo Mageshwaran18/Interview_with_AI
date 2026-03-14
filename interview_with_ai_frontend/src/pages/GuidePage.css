@@ -437,3 +437,142 @@
 .requirements-list::-webkit-scrollbar-thumb:hover {
   background: #484f58;
 }
+
+/* ═══════════════════════════════════════════
+   Phase 2 — New Styles
+   ═══════════════════════════════════════════ */
+
+/* ─── Timer Warning (< 5 min) ─── */
+.timer-warning {
+  color: #f85149 !important;
+  background: rgba(248, 81, 73, 0.15) !important;
+  border-color: rgba(248, 81, 73, 0.3) !important;
+  animation: pulse-warning 1.5s infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+
+/* ─── Submit Button ─── */
+.submit-btn {
+  background: linear-gradient(135deg, #238636, #2ea043);
+  color: #ffffff;
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #2ea043, #3fb950);
+  box-shadow: 0 0 12px rgba(46, 160, 67, 0.3);
+}
+
+/* ─── Session Ended Badge ─── */
+.session-ended-badge {
+  font-size: 12px;
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.1);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  font-weight: 600;
+}
+
+/* ─── Code Editor: adjust for test panel ─── */
+.code-editor-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Test Panel ─── */
+.test-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #252526;
+  border-top: 1px solid #3c3c3c;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.run-tests-btn {
+  background: linear-gradient(135deg, #1f6feb, #388bfd);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.run-tests-btn:hover:not(:disabled) {
+  box-shadow: 0 0 10px rgba(56, 139, 253, 0.4);
+  transform: scale(1.02);
+}
+
+.run-tests-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ─── Test Results ─── */
+.test-results {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.test-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.test-passed { color: #3fb950; }
+.test-failed { color: #f85149; }
+.test-total  { color: #8b949e; font-weight: 400; }
+
+.toggle-log-btn {
+  background: none;
+  border: 1px solid #30363d;
+  color: #8b949e;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-log-btn:hover {
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.test-output-log {
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  color: #8b949e;
+  margin: 4px 0 0 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

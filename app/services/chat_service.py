@@ -2,6 +2,7 @@ import google.generativeai as genai
 from datetime import datetime, timezone
 from app.config import settings
 from app.database import sessions_collection
+from app.services.event_service import log_event
 
 
 # ─── Configure the Gemini API ───
@@ -123,21 +124,34 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
             # Re-raise if it's a different error
             raise
     
-    # ── Step 2: Log to MongoDB (Interaction Trace Φ seed) ──
-    # This is the FOUNDATION of the evaluation system.
-    # Every prompt and response is saved so the Evaluation Engine
-    # (Phase 3) can later analyze the candidate's AI usage patterns.
+    # ── Step 2: Log to MongoDB sessions_collection (Phase 1 backward compat) ──
     interaction_log = {
         "session_id": session_id,
         "timestamp": datetime.now(timezone.utc),
         "prompt": prompt,
         "response": ai_response_text,
         "token_count": token_count,
-        "source": source,  # Track whether real API or mock
+        "source": source,
     }
     sessions_collection.insert_one(interaction_log)
     
-    # ── Step 3: Return to the route layer ──
+    # ── Step 3: Log PROMPT + RESPONSE events to Φ (Phase 2) ──
+    # This is the structured Interaction Trace that the Evaluation Engine reads
+    try:
+        await log_event(session_id, "PROMPT", {
+            "prompt_text": prompt,
+            "token_in": token_count.get("prompt_tokens", 0) if token_count else 0,
+        })
+        await log_event(session_id, "RESPONSE", {
+            "response_text": ai_response_text,
+            "token_out": token_count.get("response_tokens", 0) if token_count else 0,
+            "source": source,
+        })
+    except Exception as e:
+        # Don't fail the chat if event logging fails
+        print(f"Warning: Failed to log events to Φ: {e}")
+    
+    # ── Step 4: Return to the route layer ──
     return {
         "session_id": session_id,
         "response": ai_response_text,
