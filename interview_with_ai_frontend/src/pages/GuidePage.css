@@ -2,12 +2,21 @@
    GUIDE Page — Three-Panel Layout Styles
    ═══════════════════════════════════════════ */
 
+/* ─── Root Container Fix ─── */
+#root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
 /* ─── Full Page Layout ─── */
 .guide-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   background: #0d1117;
   color: #e6edf3;
@@ -21,7 +30,7 @@
   justify-content: space-between;
   padding: 0 20px;
   height: 48px;
-  min-height: 48px;
+  flex-shrink: 0;
   background: linear-gradient(135deg, #161b22, #1c2333);
   border-bottom: 1px solid #30363d;
   z-index: 10;
@@ -52,6 +61,38 @@
   color: #8b949e;
 }
 
+/* ─── Panel Toggle Buttons ─── */
+.panel-toggle-btn {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.panel-toggle-btn:hover {
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+}
+
+.panel-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.left-toggle {
+  margin-right: 8px;
+}
+
+.right-toggle {
+  margin-left: 8px;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -80,6 +121,7 @@
   grid-template-columns: 280px 1fr 350px;
   flex: 1;
   overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 .panel {

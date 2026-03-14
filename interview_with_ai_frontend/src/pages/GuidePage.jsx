@@ -31,6 +31,10 @@ function GuidePage() {
   const timerRef = useRef(null);
   const sessionActiveRef = useRef(true); // Ref mirror for callbacks
 
+  // ─── Panel Visibility State ───
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
   // Format seconds → "MM:SS"
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -99,11 +103,26 @@ function GuidePage() {
   // Timer warning: red when < 5 minutes
   const isTimerWarning = timeRemaining < 300;
 
+  // Calculate dynamic grid columns based on open panels
+  const getGridTemplateColumns = () => {
+    if (leftPanelOpen && rightPanelOpen) return "280px 1fr 350px";
+    if (leftPanelOpen && !rightPanelOpen) return "280px 1fr";
+    if (!leftPanelOpen && rightPanelOpen) return "1fr 350px";
+    return "1fr"; // Both closed
+  };
+
   return (
     <div className="guide-page">
       {/* Top Bar */}
       <header className="guide-topbar">
         <div className="topbar-left">
+          <button
+            className="panel-toggle-btn left-toggle"
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            title={leftPanelOpen ? "Hide left panel" : "Show left panel"}
+          >
+            {leftPanelOpen ? "◀" : "▶"}
+          </button>
           <span className="topbar-logo">🎯 GUIDE</span>
           <span className="topbar-divider">|</span>
           <span className="topbar-task">Library Management System</span>
@@ -119,15 +138,26 @@ function GuidePage() {
             </button>
           )}
           {!sessionActive && <span className="session-ended-badge">Session Ended</span>}
+          <button
+            className="panel-toggle-btn right-toggle"
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            title={rightPanelOpen ? "Hide right panel" : "Show right panel"}
+          >
+            {rightPanelOpen ? "▶" : "◀"}
+          </button>
         </div>
       </header>
 
-      {/* Three-Panel Layout */}
-      <main className="guide-panels">
+      {/* Three-Panel Layout with Dynamic Grid */}
+      <main className="guide-panels" style={{
+        gridTemplateColumns: getGridTemplateColumns()
+      }}>
         {/* Left Panel: Task Requirements */}
-        <aside className="panel panel-left">
-          <TaskSidebar />
-        </aside>
+        {leftPanelOpen && (
+          <aside className="panel panel-left">
+            <TaskSidebar />
+          </aside>
+        )}
 
         {/* Center Panel: Code Editor + Test Panel */}
         <section className="panel panel-center">
@@ -136,9 +166,11 @@ function GuidePage() {
         </section>
 
         {/* Right Panel: AI Chat */}
-        <aside className="panel panel-right">
-          <ChatPanel sessionId={sessionId} />
-        </aside>
+        {rightPanelOpen && (
+          <aside className="panel panel-right">
+            <ChatPanel sessionId={sessionId} />
+          </aside>
+        )}
       </main>
     </div>
   );
