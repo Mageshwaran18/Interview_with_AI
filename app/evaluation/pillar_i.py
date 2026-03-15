@@ -110,8 +110,8 @@ async def compute_ar(session_id: str) -> dict:
     )
     
     if not responses or not code_saves:
-        return {"score": 50.0, "ar_ratio": 0.5, "accepted": 0, "total": 0,
-                "reasoning": "Not enough data to compute"}
+        return {"score": 0.0, "ar_ratio": 0, "accepted": 0, "total": 0,
+                "reasoning": "Insufficient engagement to assess iteration quality"}
     
     accepted = 0
     total_evaluated = 0
@@ -162,13 +162,14 @@ async def compute_ar(session_id: str) -> dict:
             save_snapshot.strip().lower()
         ).ratio()
         
-        # If > 90% of AI code appears in save → accepted as-is
-        if similarity > 0.3:  # Lower threshold since we compare snippets to full code
+        # If >75% of AI code appears in save → accepted as-is
+        # This is a professional threshold that prevents low-quality copies
+        if similarity > 0.75:
             accepted += 1
     
     if total_evaluated == 0:
-        return {"score": 50.0, "ar_ratio": 0.5, "accepted": 0, "total": 0,
-                "reasoning": "No response-to-save pairs found"}
+        return {"score": 0.0, "ar_ratio": 0, "accepted": 0, "total": 0,
+                "reasoning": "No AI responses found to evaluate acceptance"}
     
     ar = accepted / total_evaluated
     

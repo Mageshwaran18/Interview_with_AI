@@ -92,17 +92,17 @@ async def compute_cqs(session_id: str) -> dict:
 
     if not last_save:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "issues": [],
-            "reasoning": "No code snapshot available — using neutral score"
+            "reasoning": "No code implementation — code quality cannot be assessed"
         }
 
     code = last_save.get("payload", {}).get("full_snapshot", "")
     if not code or len(code.strip()) < 20:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "issues": [],
-            "reasoning": "Code snapshot too short to analyze"
+            "reasoning": "Code too minimal to analyze"
         }
 
     lines = code.split("\n")
@@ -212,16 +212,16 @@ async def compute_dq(session_id: str) -> dict:
             "score": 50.0,
             "comment_ratio": 0,
             "docstring_coverage": 0,
-            "reasoning": "No code snapshot available"
+            "reasoning": "No code to document"
         }
 
     code = last_save.get("payload", {}).get("full_snapshot", "")
     if not code or len(code.strip()) < 20:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "comment_ratio": 0,
             "docstring_coverage": 0,
-            "reasoning": "Code snapshot too short"
+            "reasoning": "Code too minimal for documentation assessment"
         }
 
     lines = code.split("\n")
@@ -229,10 +229,10 @@ async def compute_dq(session_id: str) -> dict:
 
     if total_lines == 0:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "comment_ratio": 0,
             "docstring_coverage": 0,
-            "reasoning": "No non-blank lines"
+            "reasoning": "No code to document"
         }
 
     # --- Comment ratio ---
@@ -297,15 +297,15 @@ async def compute_ac(session_id: str) -> dict:
 
     if not last_save:
         return {
-            "score": 50.0,
-            "reasoning": "No code snapshot available for architectural analysis"
+            "score": 0.0,
+            "reasoning": "No code implemented — cannot assess architecture"
         }
 
     code = last_save.get("payload", {}).get("full_snapshot", "")
     if not code or len(code.strip()) < 50:
         return {
-            "score": 50.0,
-            "reasoning": "Code too short for architectural analysis"
+            "score": 0.0,
+            "reasoning": "Code insufficient for architectural evaluation"
         }
 
     # Truncate if very long (to avoid token limits)
@@ -380,17 +380,17 @@ async def compute_ss(session_id: str) -> dict:
 
     if not last_save:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "method": "unavailable",
-            "reasoning": "No code snapshot available for security analysis"
+            "reasoning": "No code to analyze for security issues"
         }
 
     code = last_save.get("payload", {}).get("full_snapshot", "")
     if not code or len(code.strip()) < 20:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "method": "unavailable",
-            "reasoning": "Code snapshot too short to analyze"
+            "reasoning": "Code too minimal for security analysis"
         }
 
     # Try using Bandit if available

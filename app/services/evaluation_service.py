@@ -13,6 +13,11 @@ from app.evaluation.pillar_u import compute_u_score
 from app.evaluation.pillar_i import compute_i_score
 from app.evaluation.pillar_d import compute_d_score
 from app.evaluation.pillar_e import compute_e_score
+from app.evaluation.minimum_effort_validator import (
+    validate_minimum_effort,
+    apply_minimum_effort_penalties,
+    get_minimum_effort_report
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +57,14 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         duration_minutes = 0.0
         if session_start and session_end:
             duration_minutes = (session_end["timestamp"] - session_start["timestamp"]).total_seconds() / 60
+        
+        # ─── MINIMUM EFFORT VALIDATION (Professional Standards) ───
+        logger.info(f"Validating minimum effort thresholds for session {session_id}")
+        effort_validation = await validate_minimum_effort(session_id)
+        effort_report = get_minimum_effort_report(session_id, effort_validation)
+        
+        if not effort_validation["passes_validation"]:
+            logger.warning(f"Session {session_id} fails minimum effort: {effort_report['interpretation']}")
         
         logger.info(f"Computing pillar scores for session {session_id}")
         
@@ -99,6 +112,30 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         d_score = make_pillar_score(pillar_d, "D", "Detection & Validation", WEIGHTS["D"])
         e_score = make_pillar_score(pillar_e, "E", "End Result Quality", WEIGHTS["E"])
         
+        # ─── APPLY MINIMUM EFFORT PENALTIES ───
+        if not effort_validation["passes_validation"]:
+            raw_scores = {
+                "G": g_score.score,
+                "U": u_score.score,
+                "I": i_score.score,
+                "D": d_score.score,
+                "E": e_score.score,
+            }
+            
+            penalized_scores = await apply_minimum_effort_penalties(
+                raw_scores, 
+                effort_validation["penalties"]
+            )
+            
+            # Update PillarScore objects with penalized scores
+            g_score.score = penalized_scores.get("G", g_score.score)
+            u_score.score = penalized_scores.get("U", u_score.score)
+            i_score.score = penalized_scores.get("I", i_score.score)
+            d_score.score = penalized_scores.get("D", d_score.score)
+            e_score.score = penalized_scores.get("E", e_score.score)
+            
+            logger.info(f"Applied minimum effort penalties for session {session_id}")
+        
         # Compute composite Q score
         # Q = 0.20×G + 0.25×U + 0.20×I + 0.15×D + 0.20×E
         composite_q = (
@@ -125,6 +162,13 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         # Store in MongoDB
         eval_dict = evaluation.dict(by_alias=False)
         eval_dict["created_at"] = datetime.utcnow()
+        
+        # Add minimum effort validation report
+        eval_dict["minimum_effort_validation"] = {
+            "passes": effort_validation["passes_validation"],
+            "report": effort_report,
+            "metrics": effort_validation
+        }
         
         result = evaluations_collection.insert_one(eval_dict)
         logger.info(f"Evaluation stored with ID {result.inserted_id} for session {session_id}")

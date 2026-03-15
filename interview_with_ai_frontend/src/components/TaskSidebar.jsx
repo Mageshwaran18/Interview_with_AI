@@ -13,89 +13,95 @@ import { useState } from "react";
  - CSS classes for styling
 */
 
-// Simplified requirements with CRUD operations for the Library Management System
+// Core requirements (5 essential tasks) with checkbox items instead of functions
 const REQUIREMENTS = [
-  {
-    id: "student-mgmt",
-    title: "Student Management",
-    description: "Create student registration and login functions.",
-    details: [
-      "registerStudent(name, email, password)",
-      "loginStudent(email, password)",
-    ],
-  },
   {
     id: "book-mgmt",
     title: "Book Management",
     description: "Implement CRUD operations for books.",
-    details: [
-      "addBook(title, author, isbn, copies)",
-      "removeBook(bookId)",
-      "updateBook(bookId, details)",
-      "getBook(bookId)",
-      "getAllBooks()",
+    checkboxItems: [
+      "Add book function",
+      "Delete book function",
+      "Error handling",
+    ],
+  },
+  {
+    id: "member-mgmt",
+    title: "Member Management",
+    description: "Register and manage library members.",
+    checkboxItems: [
+      "Register member function",
+      "Update member details",
+      "Validation implemented",
+    ],
+  },
+  {
+    id: "loan-tracking",
+    title: "Loan Tracking",
+    description: "Handle book checkout and returns.",
+    checkboxItems: [
+      "Checkout function",
+      "Return function",
+      "3-book limit enforced",
     ],
   },
   {
     id: "search",
-    title: "Search & Discovery",
-    description: "Search functionality for books.",
-    details: [
-      "searchBookByTitle(title)",
+    title: "Search Functionality",
+    description: "Search books by title and author.",
+    checkboxItems: [
+      "Search by title",
+      "Search by author",
+      "Partial match support",
     ],
   },
   {
-    id: "borrowing",
-    title: "Borrowing System",
-    description: "Manage book borrowing operations.",
-    details: [
-      "getBorrowedBooks(studentId)",
-    ],
-  },
-  {
-    id: "history",
-    title: "History & Records",
-    description: "Track student borrowing history.",
-    details: [
-      "getStudentBorrowHistory(studentId)",
-    ],
-  },
-  {
-    id: "fine-mgmt",
-    title: "Fine Management",
-    description: "Calculate and manage library fines.",
-    details: [
-      "calculateFine(studentId, bookId)",
-      "payFine(studentId, amount)",
-    ],
-  },
-  {
-    id: "analytics",
-    title: "Analytics & Stats",
-    description: "Generate library statistics.",
-    details: [
-      "getLibraryStats()",
+    id: "overdue-detection",
+    title: "Overdue Detection",
+    description: "Identify and track overdue books.",
+    checkboxItems: [
+      "Detect overdue loans",
+      "Calculate days overdue",
+      "Generate report",
     ],
   },
 ];
 
 function TaskSidebar() {
-  // Track which requirements the user has checked off
-  const [checked, setChecked] = useState({});
   // Track which requirements are expanded
   const [expanded, setExpanded] = useState({});
-
-  const toggleCheck = (id, e) => {
-    e.stopPropagation(); // Prevent triggering expand/collapse
-    setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Track sub-item checkboxes (format: "req-id_item-index")
+  const [subItemsChecked, setSubItemsChecked] = useState({});
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Count completed items for progress display
-  const completedCount = Object.values(checked).filter(Boolean).length;
+  const isRequirementComplete = (req) =>
+    req.checkboxItems.every((_, idx) => subItemsChecked[`${req.id}_${idx}`]);
+
+  const toggleCheck = (req, e) => {
+    e.stopPropagation();
+    const shouldCompleteAll = !isRequirementComplete(req);
+    setSubItemsChecked((prev) => {
+      const next = { ...prev };
+      req.checkboxItems.forEach((_, idx) => {
+        next[`${req.id}_${idx}`] = shouldCompleteAll;
+      });
+      return next;
+    });
+  };
+
+  const toggleSubItemCheck = (key) => {
+    setSubItemsChecked((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Count completed main requirements (auto-derived from sub-items)
+  const completedCount = REQUIREMENTS.filter((req) => isRequirementComplete(req)).length;
+  // Count total sub-items
+  const totalSubItems = REQUIREMENTS.reduce((sum, req) => sum + req.checkboxItems.length, 0);
+  // Count completed sub-items
+  const completedSubItems = Object.values(subItemsChecked).filter(Boolean).length;
 
   return (
     <div className="task-sidebar">
@@ -110,7 +116,7 @@ function TaskSidebar() {
           />
         </div>
         <p className="progress-text">
-          {completedCount} / {REQUIREMENTS.length} completed
+          {completedCount} / {REQUIREMENTS.length} requirements • {completedSubItems} / {totalSubItems} tasks
         </p>
       </div>
 
@@ -118,17 +124,17 @@ function TaskSidebar() {
       <div className="requirements-list">
         {REQUIREMENTS.map((req) => (
           <div key={req.id} className="requirement-item">
-            {/* Top Section - Always Visible */}
+            {/* Main Requirement Checkbox + Expand Toggle */}
             <div
-              className={`requirement-card ${checked[req.id] ? "completed" : ""}`}
+              className={`requirement-card ${isRequirementComplete(req) ? "completed" : ""}`}
               onClick={() => toggleExpand(req.id)}
             >
               <button
                 className="requirement-checkbox"
-                onClick={(e) => toggleCheck(req.id, e)}
+                onClick={(e) => toggleCheck(req, e)}
                 title="Mark as completed"
               >
-                {checked[req.id] ? "✅" : "⬜"}
+                {isRequirementComplete(req) ? "✅" : "⬜"}
               </button>
               <div className="requirement-content">
                 <h3 className="requirement-title">{req.title}</h3>
@@ -139,16 +145,24 @@ function TaskSidebar() {
               </div>
             </div>
 
-            {/* Expanded Section - Details */}
+            {/* Sub-items Checklist (Dropdown) */}
             {expanded[req.id] && (
-              <div className="requirement-details">
-                <ul className="details-list">
-                  {req.details.map((detail, idx) => (
-                    <li key={idx} className="detail-item">
-                      {detail}
-                    </li>
-                  ))}
-                </ul>
+              <div className="requirement-subitems">
+                {req.checkboxItems.map((item, idx) => {
+                  const itemKey = `${req.id}_${idx}`;
+                  return (
+                    <div key={idx} className="subitem-checkbox-row">
+                      <button
+                        className="subitem-checkbox"
+                        onClick={() => toggleSubItemCheck(itemKey)}
+                        title={item}
+                      >
+                        {subItemsChecked[itemKey] ? "✅" : "☐"}
+                      </button>
+                      <span className="subitem-label">{item}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

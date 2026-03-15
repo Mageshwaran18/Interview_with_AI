@@ -5,16 +5,22 @@
 
 /* ─── Page Root ─── */
 .results-dashboard {
+  width: 100%;
   min-height: 100vh;
   background: #0d1117;
   color: #e6edf3;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* ─── Header ─── */
 .rd-header {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,6 +29,12 @@
   border-bottom: 1px solid #30363d;
   flex-wrap: wrap;
   gap: 12px;
+  box-sizing: border-box;
+  margin: 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .rd-header-left {
@@ -106,10 +118,11 @@
 .rd-content {
   flex: 1;
   padding: 24px 32px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ─── Section Title ─── */
@@ -494,9 +507,11 @@
 /* ─── Detail Grid ─── */
 .rd-detail-grid {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .rd-radar-section,
@@ -738,6 +753,8 @@
 /* ─── Pillar Cards Section (Detailed Feedback) ─── */
 .rd-pillar-cards-section {
   margin-bottom: 28px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .rd-section-subtitle {
@@ -748,9 +765,11 @@
 }
 
 .rd-pillar-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .rd-pillar-card {
@@ -766,6 +785,8 @@
   text-align: center;
   position: relative;
   overflow: hidden;
+  flex: 1 1 calc(20% - 13px);
+  min-width: 160px;
 }
 
 .rd-pillar-card::before {
@@ -853,21 +874,27 @@
 }
 
 /* ─── Responsive for Pillar Cards ─── */
+@media (max-width: 1400px) {
+  .rd-pillar-card {
+    flex: 1 1 calc(25% - 13px);
+  }
+}
+
 @media (max-width: 1200px) {
-  .rd-pillar-cards-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .rd-pillar-card {
+    flex: 1 1 calc(33.333% - 11px);
   }
 }
 
 @media (max-width: 900px) {
-  .rd-pillar-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .rd-pillar-card {
+    flex: 1 1 calc(50% - 8px);
   }
 }
 
 @media (max-width: 600px) {
-  .rd-pillar-cards-grid {
-    grid-template-columns: 1fr;
+  .rd-pillar-card {
+    flex: 1 1 100%;
   }
 
   .rd-pillar-card-score {
@@ -887,10 +914,6 @@
 
   .pillar-avg-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  .rd-pillar-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .rd-detail-grid {
@@ -929,18 +952,6 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .rd-pillar-cards-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .rd-pillar-card-score {
-    font-size: 24px;
-  }
-
-  .rd-pillar-card-icon {
-    font-size: 24px;
-  }
-
   .ranking-table {
     font-size: 11px;
   }
@@ -950,3 +961,4 @@
     padding: 8px 10px;
   }
 }
+

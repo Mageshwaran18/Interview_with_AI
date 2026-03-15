@@ -31,92 +31,35 @@ from datetime import datetime, timedelta
 class Library:
     def __init__(self):
         self.books = {}
-        self.members = {}
         self.loans = {}
-    
-    # Book Management
-    def add_book(self, isbn, title, author, quantity):
-        """Add a book to the library"""
-        self.books[isbn] = {
-            'title': title,
-            'author': author,
-            'quantity': quantity,
-            'date_added': datetime.now()
-        }
-        return True
-    
-    def list_books(self):
-        """Return all books"""
-        return self.books
-    
-    # Member Management
-    def register_member(self, member_id, name, email):
-        """Register a new library member"""
-        self.members[member_id] = {
-            'name': name,
-            'email': email,
-            'books_checked_out': 0
-        }
-        return True
-    
-    # Loan Tracking (SEEDED BUG #3: Wrong 3-book limit check)
-    def checkout_book(self, isbn, member_id):
-        """Checkout a book to a member"""
-        # BUG #2: Missing null check for book existence
-        current_checkout_count = sum(1 for loan in self.loans.values() 
-                                     if loan['member_id'] == member_id and not loan['returned'])
-        
-        # BUG #3: Uses > 3 instead of >= 3 (allows 4 books to be checked out)
-        if current_checkout_count > 3:
-            return {'error': 'Member has reached checkout limit'}
-        
-        # BUG #2: No verification that book exists - will cause KeyError
-        self.books[isbn]['quantity'] -= 1
-        
-        self.loans[isbn + '_' + member_id] = {
-            'isbn': isbn,
-            'member_id': member_id,
-            'checkout_date': datetime.now(),
-            'returned': False
-        }
-        self.members[member_id]['books_checked_out'] += 1
-        return {'success': True}
-    
-    def return_book(self, isbn, member_id):
-        """Return a book from a member"""
-        loan_id = isbn + '_' + member_id
-        if loan_id in self.loans:
-            self.loans[loan_id]['returned'] = True
-            self.books[isbn]['quantity'] += 1
-            self.members[member_id]['books_checked_out'] -= 1
-            return {'success': True}
-        return {'error': 'Loan not found'}
-    
-    # Search
-    def search_by_title(self, query):
-        """Search books by title (partial match)"""
-        return {isbn: book for isbn, book in self.books.items() 
-                if query.lower() in book['title'].lower()}
-    
-    def search_by_author(self, query):
-        """Search books by author (partial match)"""
-        return {isbn: book for isbn, book in self.books.items() 
-                if query.lower() in book['author'].lower()}
-    
-    # Overdue Detection (SEEDED BUG #1: Off-by-one comparison)
-    def get_overdue_loans(self):
-        """List all overdue loans (checked out > 14 days and not returned)"""
-        overdue = []
-        now = datetime.now()
-        for loan_id, loan in self.loans.items():
-            if not loan['returned']:
-                # BUG #1: Uses > 14 instead of >= 14 (off-by-one error)
-                days_checked_out = (now - loan['checkout_date']).days
-                if days_checked_out > 14:
-                    overdue.append(loan)
-        return overdue
-    
-    # TODO: Complete error handling for all operations
+
+  # Task 1 (Bug-Free): Book Management
+  def add_book(self, isbn, title, author, quantity):
+    """Add a book to the library"""
+    self.books[isbn] = {
+      'title': title,
+      'author': author,
+      'quantity': quantity,
+      'date_added': datetime.now(),
+    }
+    return {'success': True}
+
+  # Task 2 (Bugged): Overdue Detection
+  # BUG: Uses > 14 instead of >= 14 (off-by-one)
+  def get_overdue_loans(self):
+    """List all overdue loans (checked out >= 14 days and not returned)"""
+    overdue = []
+    now = datetime.now()
+
+    for loan in self.loans.values():
+      if not loan['returned']:
+        days_checked_out = (now - loan['checkout_date']).days
+        if days_checked_out > 14:
+          overdue.append(loan)
+
+    return overdue
+
+  # TODO: Implement remaining requirements
 
 `;
 

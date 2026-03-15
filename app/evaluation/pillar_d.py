@@ -39,7 +39,7 @@ async def compute_tfr(session_id: str) -> dict:
     )
 
     if not start_event:
-        return {"score": 50.0, "minutes": 0, "reasoning": "No SESSION_START event found"}
+        return {"score": 0.0, "minutes": 0, "reasoning": "No session tracking data"}
 
     first_test = events_collection.find_one(
         {"session_id": session_id, "event_type": "TEST_RUN"},
@@ -87,10 +87,10 @@ async def compute_bdr(session_id: str) -> dict:
 
     if not code_saves:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "bugs_detected": 0,
             "total_saves": 0,
-            "reasoning": "No code saves found — using neutral score"
+            "reasoning": "No code implementation — cannot assess bug detection"
         }
 
     # Heuristic: look for correction patterns in diffs
@@ -139,10 +139,10 @@ async def compute_bdr(session_id: str) -> dict:
 
     if total_saves == 0:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "bugs_detected": 0,
             "total_saves": 0,
-            "reasoning": "No code saves to analyze"
+            "reasoning": "No code saves — no validation possible"
         }
 
     # A moderate fix rate is good — too many fixes might mean messy code
@@ -188,10 +188,10 @@ async def compute_hcr(session_id: str) -> dict:
 
     if len(code_saves) < 2:
         return {
-            "score": 50.0,
+            "score": 0.0,
             "rollbacks_detected": 0,
             "total_save_pairs": 0,
-            "reasoning": "Not enough code saves for hallucination detection — using neutral score"
+            "reasoning": "Insufficient code iterations to detect hallucination catches"
         }
 
     # Heuristic: detect rollback patterns

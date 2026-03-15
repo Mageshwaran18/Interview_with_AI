@@ -73,7 +73,7 @@ async def compute_ppr(session_id: str) -> dict:
         sort=[("timestamp", 1)]
     )
     if not start_event:
-        return {"score": 50.0, "ppr_ratio": 0, "reasoning": "No SESSION_START event found"}
+        return {"score": 0.0, "ppr_ratio": 0, "reasoning": "No SESSION_START event — no planning evidence"}
     
     # Get first PROMPT event
     first_prompt = events_collection.find_one(
@@ -81,7 +81,7 @@ async def compute_ppr(session_id: str) -> dict:
         sort=[("timestamp", 1)]
     )
     if not first_prompt:
-        return {"score": 50.0, "ppr_ratio": 0, "reasoning": "No PROMPT events found"}
+        return {"score": 0.0, "ppr_ratio": 0, "reasoning": "No prompts sent — no engagement"}
     
     # Get SESSION_END or last event
     end_event = events_collection.find_one(
@@ -104,7 +104,7 @@ async def compute_ppr(session_id: str) -> dict:
     
     total_duration = (end_time - start_time).total_seconds()
     if total_duration <= 0:
-        return {"score": 50.0, "ppr_ratio": 0, "reasoning": "Session too short"}
+        return {"score": 0.0, "ppr_ratio": 0, "reasoning": "Session duration invalid"}
     
     pre_planning_time = (prompt_time - start_time).total_seconds()
     ppr_ratio = pre_planning_time / total_duration
@@ -170,7 +170,7 @@ async def compute_sos(session_id: str) -> dict:
     )
     
     if not code_saves:
-        return {"score": 50.0, "violations": 0, "reasoning": "No code saves found"}
+        return {"score": 0.0, "violations": 0, "reasoning": "No code implementation — cannot assess subtask order"}
     
     # Detect which features appeared in which order
     feature_order = []
@@ -282,8 +282,11 @@ async def compute_g_score(session_id: str) -> dict:
     sos = await compute_sos(session_id)
     dds = await compute_dds(session_id)
     
+    # Handle None scores from Judge (API quota exceeded)
+    dds_score = dds["score"] if dds["score"] is not None else 0.0
+    
     g_score = (
-        0.30 * dds["score"] +
+        0.30 * dds_score +
         0.20 * ppr["score"] +
         0.35 * rc["score"] +
         0.15 * sos["score"]

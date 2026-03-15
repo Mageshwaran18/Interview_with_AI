@@ -148,7 +148,7 @@ async def compute_cir(session_id: str) -> dict:
     )
     
     if not prompts:
-        return {"score": 0.0, "cir_ratio": 0, "reasoning": "No prompts found"}
+        return {"score": 0.0, "ppf_ratio": 0, "reasoning": "No prompts sent"}
     
     # Get the latest code snapshot for reference identifiers
     last_code_save = events_collection.find_one(

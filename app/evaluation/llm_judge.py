@@ -76,8 +76,10 @@ async def judge_call(prompt: str) -> dict:
     except Exception as e:
         error_str = str(e)
         if "quota" in error_str.lower() or "429" in error_str:
-            return {"score": 5.0, "reasoning": "Judge unavailable: API quota exceeded"}
-        return {"score": 5.0, "reasoning": f"Judge error: {error_str[:200]}"}
+            # API quota exceeded — cannot evaluate, flag as skipped (not 50%)
+            return {"score": None, "reasoning": "Judge unavailable: API quota exceeded — metric skipped"}
+        # Other errors warrant 0, not 50% — candidate gets no credit for errors in judgment
+        return {"score": 0.0, "reasoning": f"Judge evaluation failed: {error_str[:100]} — rigor penalty applied"}
 
 
 async def judge_with_voting(prompt: str, num_calls: int = 1) -> dict:

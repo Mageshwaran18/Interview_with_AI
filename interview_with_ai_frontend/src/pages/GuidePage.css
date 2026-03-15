@@ -194,12 +194,22 @@
   display: flex;
   gap: 10px;
   padding: 10px;
-  margin-bottom: 6px;
+  margin-bottom: 0;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
   align-items: flex-start;
+  background: transparent;
+}
+
+.requirement-item {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  overflow: hidden;
+  background: transparent;
+  transition: all 0.2s ease;
 }
 
 .requirement-card:hover {
@@ -238,6 +248,14 @@
   flex: 1;
 }
 
+.requirement-expand-icon {
+  font-size: 12px;
+  color: #8b949e;
+  flex-shrink: 0;
+  margin-top: 4px;
+  transition: transform 0.2s ease;
+}
+
 .requirement-title {
   font-size: 13px;
   font-weight: 600;
@@ -252,29 +270,15 @@
   line-height: 1.4;
 }
 
-/* ─── Expandable Details Section ─── */
-.requirement-item {
-  margin-bottom: 6px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  overflow: hidden;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.requirement-expand-icon {
-  font-size: 12px;
-  color: #8b949e;
-  flex-shrink: 0;
-  margin-top: 4px;
-  transition: transform 0.2s ease;
-}
-
-.requirement-details {
+/* ─── Sub-items Checklist Section ─── */
+.requirement-subitems {
   background: rgba(22, 27, 34, 0.8);
   border-top: 1px solid #21262d;
   border-radius: 0 0 8px 8px;
   padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   animation: slideDown 0.2s ease-out;
 }
 
@@ -289,26 +293,50 @@
   }
 }
 
-.details-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.subitem-checkbox-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
-.detail-item {
-  font-size: 10px;
+.subitem-checkbox-row:hover {
+  background: rgba(88, 166, 255, 0.05);
+}
+
+.subitem-checkbox {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #30363d;
+  background: transparent;
   color: #58a6ff;
-  margin: 0;
-  padding-left: 0;
-  line-height: 1.5;
-  letter-spacing: 0.3px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  padding: 2px 4px;
-  background: rgba(88, 166, 255, 0.08);
-  border-radius: 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.subitem-checkbox:hover {
+  border-color: #58a6ff;
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.subitem-checkbox:active {
+  transform: scale(0.95);
+}
+
+.subitem-label {
+  font-size: 12px;
+  color: #e6edf3;
+  line-height: 1.4;
+  flex: 1;
 }
 
 /* ─── Code Editor Styles ─── */
