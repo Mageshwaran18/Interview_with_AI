@@ -1,11 +1,17 @@
 """
 Phase 3: Evaluation Service
 Orchestrator that runs all 5 pillar pipelines and computes the composite GUIDE score.
+
+Phase 5.4 Enhancement: Partial Evaluation Handling
+- Gracefully handles missing/failed pillar evaluations
+- Dynamically reweights remaining pillars
+- Marks unavailable metrics clearly
+- Ensures composite Q score is still meaningful
 """
 
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from app.database import events_collection, evaluations_collection
 from app.schemas.evaluation_schema import EvaluationResult, PillarScore, SubMetricScore
 from app.evaluation.pillar_g import compute_g_score
@@ -31,15 +37,56 @@ WEIGHTS = {
 }
 
 
+def reweight_pillars(available_pillars: Dict[str, bool]) -> Dict[str, float]:
+    """
+    Dynamically reweight pillar scores when some are unavailable (Phase 5.4).
+    
+    When a pillar cannot be evaluated (e.g., judge API fails after retries),
+    we exclude it and distribute its weight among available pillars proportionally.
+    
+    Example: If D (15%) is unavailable, its weight is distributed to G, U, I, E
+             G: 0.20/0.85 ≈ 0.235
+             U: 0.25/0.85 ≈ 0.294
+             I: 0.20/0.85 ≈ 0.235
+             D: 0 (skipped)
+             E: 0.20/0.85 ≈ 0.235
+    
+    Args:
+        available_pillars: Dict mapping pillar_id -> True/False
+        
+    Returns:
+        Reweighted dict with same structure as WEIGHTS
+    """
+    # Calculate total available weight
+    total_available = sum(WEIGHTS[p] for p in WEIGHTS if available_pillars.get(p, True))
+    
+    if total_available == 0:
+        # Edge case: no pillars available (shouldn't happen)
+        logger.warning("⚠️ No pillars available for evaluation - using uniform weights")
+        num_available = sum(1 for v in available_pillars.values() if v)
+        return {p: 1.0/num_available if available_pillars.get(p, True) else 0 for p in WEIGHTS}
+    
+    # Distribute weights proportionally
+    reweighted = {}
+    for pillar_id, base_weight in WEIGHTS.items():
+        if available_pillars.get(pillar_id, True):
+            reweighted[pillar_id] = base_weight / total_available
+        else:
+            reweighted[pillar_id] = 0.0
+    
+    return reweighted
+
+
 async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
     """
     Run the complete 5-pillar evaluation pipeline for a session.
+    Handles partial evaluations gracefully (Phase 5.4).
     
     Args:
         session_id: The session to evaluate
         
     Returns:
-        Complete evaluation result dict, or None if evaluation fails
+        Complete evaluation result dict, or None if evaluation completely fails
     """
     try:
         logger.info(f"Starting evaluation for session {session_id}")
@@ -68,12 +115,39 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         
         logger.info(f"Computing pillar scores for session {session_id}")
         
-        # Compute all 5 pillars in parallel (conceptually - we run sequentially for now)
-        pillar_g = await compute_g_score(session_id)
-        pillar_u = await compute_u_score(session_id)
-        pillar_i = await compute_i_score(session_id)
-        pillar_d = await compute_d_score(session_id)
-        pillar_e = await compute_e_score(session_id)
+        # ─── COMPUTE PILLARS WITH PARTIAL EVALUATION SUPPORT (Phase 5.4) ───
+        # Try to compute each pillar, but continue even if one fails
+        pillar_results = {}
+        pillar_available = {}
+        
+        pillar_configs = [
+            ("G", "Goal Decomposition", compute_g_score),
+            ("U", "Usage Efficiency", compute_u_score),
+            ("I", "Iteration & Refinement", compute_i_score),
+            ("D", "Detection & Validation", compute_d_score),
+            ("E", "End Result Quality", compute_e_score),
+        ]
+        
+        for pillar_id, pillar_name, compute_func in pillar_configs:
+            try:
+                logger.info(f"Computing pillar {pillar_id} ({pillar_name})")
+                result = await compute_func(session_id)
+                pillar_results[pillar_id] = result
+                pillar_available[pillar_id] = True
+                logger.info(f"✅ Pillar {pillar_id} computed successfully")
+            except Exception as e:
+                logger.warning(f"❌ Pillar {pillar_id} computation failed: {e}")
+                pillar_results[pillar_id] = {"score": None, "sub_metrics": {}, "error": str(e)}
+                pillar_available[pillar_id] = False
+        
+        # Check if ALL pillars failed (truly unrecoverable)
+        if not any(pillar_available.values()):
+            logger.error(f"ALL pillars failed for session {session_id} - cannot evaluate")
+            return None
+        
+        # ─── REWEIGHT AVAILABLE PILLARS (Phase 5.4) ───
+        reweighted_weights = reweight_pillars(pillar_available)
+        logger.info(f"Reweighted pillar scores for available pillars: {reweighted_weights}")
         
         # Helper function to convert pillar result to PillarScore
         def make_pillar_score(pillar_dict, pillar_id, pillar_name, weight):
@@ -97,54 +171,67 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
                             value=metric_data
                         ))
             
+            # Mark as unavailable if score is None
+            is_available = pillar_dict.get("score") is not None
+            
             return PillarScore(
                 pillar_id=pillar_id,
                 pillar_name=pillar_name,
                 score=pillar_dict.get("score", 50.0),
                 weight=weight,
-                sub_metrics=sub_metrics
+                sub_metrics=sub_metrics,
+                available=is_available,
+                error=pillar_dict.get("error", None)
             )
         
-        # Create PillarScore objects
-        g_score = make_pillar_score(pillar_g, "G", "Goal Decomposition", WEIGHTS["G"])
-        u_score = make_pillar_score(pillar_u, "U", "Usage Efficiency", WEIGHTS["U"])
-        i_score = make_pillar_score(pillar_i, "I", "Iteration & Refinement", WEIGHTS["I"])
-        d_score = make_pillar_score(pillar_d, "D", "Detection & Validation", WEIGHTS["D"])
-        e_score = make_pillar_score(pillar_e, "E", "End Result Quality", WEIGHTS["E"])
+        # Create PillarScore objects with reweighted weights
+        g_score = make_pillar_score(pillar_results["G"], "G", "Goal Decomposition", reweighted_weights["G"])
+        u_score = make_pillar_score(pillar_results["U"], "U", "Usage Efficiency", reweighted_weights["U"])
+        i_score = make_pillar_score(pillar_results["I"], "I", "Iteration & Refinement", reweighted_weights["I"])
+        d_score = make_pillar_score(pillar_results["D"], "D", "Detection & Validation", reweighted_weights["D"])
+        e_score = make_pillar_score(pillar_results["E"], "E", "End Result Quality", reweighted_weights["E"])
         
         # ─── APPLY MINIMUM EFFORT PENALTIES ───
         if not effort_validation["passes_validation"]:
             raw_scores = {
-                "G": g_score.score,
-                "U": u_score.score,
-                "I": i_score.score,
-                "D": d_score.score,
-                "E": e_score.score,
+                "G": g_score.score if pillar_available["G"] else None,
+                "U": u_score.score if pillar_available["U"] else None,
+                "I": i_score.score if pillar_available["I"] else None,
+                "D": d_score.score if pillar_available["D"] else None,
+                "E": e_score.score if pillar_available["E"] else None,
             }
             
             penalized_scores = await apply_minimum_effort_penalties(
-                raw_scores, 
+                raw_scores,
                 effort_validation["penalties"]
             )
             
             # Update PillarScore objects with penalized scores
-            g_score.score = penalized_scores.get("G", g_score.score)
-            u_score.score = penalized_scores.get("U", u_score.score)
-            i_score.score = penalized_scores.get("I", i_score.score)
-            d_score.score = penalized_scores.get("D", d_score.score)
-            e_score.score = penalized_scores.get("E", e_score.score)
+            if pillar_available["G"]:
+                g_score.score = penalized_scores.get("G", g_score.score)
+            if pillar_available["U"]:
+                u_score.score = penalized_scores.get("U", u_score.score)
+            if pillar_available["I"]:
+                i_score.score = penalized_scores.get("I", i_score.score)
+            if pillar_available["D"]:
+                d_score.score = penalized_scores.get("D", d_score.score)
+            if pillar_available["E"]:
+                e_score.score = penalized_scores.get("E", e_score.score)
             
             logger.info(f"Applied minimum effort penalties for session {session_id}")
         
-        # Compute composite Q score
-        # Q = 0.20×G + 0.25×U + 0.20×I + 0.15×D + 0.20×E
-        composite_q = (
-            WEIGHTS["G"] * g_score.score +
-            WEIGHTS["U"] * u_score.score +
-            WEIGHTS["I"] * i_score.score +
-            WEIGHTS["D"] * d_score.score +
-            WEIGHTS["E"] * e_score.score
-        )
+        # ─── COMPUTE COMPOSITE Q SCORE WITH AVAILABLE PILLARS (Phase 5.4) ───
+        # Only use available pillars; None values are treated as 0 in weighted sum
+        composite_q = 0.0
+        for pillar_id, score_obj in [("G", g_score), ("U", u_score), ("I", i_score), ("D", d_score), ("E", e_score)]:
+            if pillar_available[pillar_id] and score_obj.score is not None:
+                composite_q += reweighted_weights[pillar_id] * score_obj.score
+        
+        # If no pillars available, set Q to 0
+        if composite_q == 0 and not any(pillar_available.values()):
+            composite_q = 0.0
+        
+        logger.info(f"Composite Q score (with reweighting): {composite_q:.2f}")
         
         # Create evaluation result
         evaluation = EvaluationResult(
@@ -168,6 +255,13 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
             "passes": effort_validation["passes_validation"],
             "report": effort_report,
             "metrics": effort_validation
+        }
+        
+        # Add partial evaluation info (Phase 5.4)
+        eval_dict["partial_evaluation"] = {
+            "available_pillars": pillar_available,
+            "reweighted_weights": reweighted_weights,
+            "notice": "Some pillars were unavailable and excluded from scoring" if not all(pillar_available.values()) else None
         }
         
         result = evaluations_collection.insert_one(eval_dict)

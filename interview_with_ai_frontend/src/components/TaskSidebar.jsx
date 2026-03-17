@@ -1,24 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /*
- ─── TaskSidebar Component ───
+ ─── TaskSidebar Component (Phase 2+ Update) ───
  
  📚 What this does:
  Displays the Library Management System requirements as a checklist.
+ NOW: Automatically detects which functions exist in the code editor!
  The candidate can see exactly what they need to build.
  
  🧠 What you'll learn:
  - React state with useState (to track checked items)
+ - useEffect to auto-detect functions in code
+ - Regex patterns to find function definitions
  - .map() to render lists
  - CSS classes for styling
 */
 
-// Core requirements (5 essential tasks) with checkbox items instead of functions
+// Core requirements (5 essential tasks) with function detection patterns
 const REQUIREMENTS = [
   {
     id: "book-mgmt",
     title: "Book Management",
     description: "Implement CRUD operations for books.",
+    functionsToDetect: [
+      { name: "add_book", label: "Add book function" },
+      { name: "delete_book", label: "Delete book function" },
+    ],
     checkboxItems: [
       "Add book function",
       "Delete book function",
@@ -29,6 +36,10 @@ const REQUIREMENTS = [
     id: "member-mgmt",
     title: "Member Management",
     description: "Register and manage library members.",
+    functionsToDetect: [
+      { name: "register_member", label: "Register member function" },
+      { name: "update_member", label: "Update member details" },
+    ],
     checkboxItems: [
       "Register member function",
       "Update member details",
@@ -39,6 +50,10 @@ const REQUIREMENTS = [
     id: "loan-tracking",
     title: "Loan Tracking",
     description: "Handle book checkout and returns.",
+    functionsToDetect: [
+      { name: "checkout_book", label: "Checkout function" },
+      { name: "return_book", label: "Return function" },
+    ],
     checkboxItems: [
       "Checkout function",
       "Return function",
@@ -49,6 +64,10 @@ const REQUIREMENTS = [
     id: "search",
     title: "Search Functionality",
     description: "Search books by title and author.",
+    functionsToDetect: [
+      { name: "search_by_title", label: "Search by title" },
+      { name: "search_by_author", label: "Search by author" },
+    ],
     checkboxItems: [
       "Search by title",
       "Search by author",
@@ -59,6 +78,9 @@ const REQUIREMENTS = [
     id: "overdue-detection",
     title: "Overdue Detection",
     description: "Identify and track overdue books.",
+    functionsToDetect: [
+      { name: "get_overdue_loans", label: "Detect overdue loans" },
+    ],
     checkboxItems: [
       "Detect overdue loans",
       "Calculate days overdue",
@@ -67,11 +89,64 @@ const REQUIREMENTS = [
   },
 ];
 
-function TaskSidebar() {
+/**
+ * Detects which functions are implemented in the code
+ * @param {string} code - The Python code to analyze
+ * @returns {Object} Map of function name -> is implemented
+ */
+function detectImplementedFunctions(code) {
+  const detected = {};
+  
+  REQUIREMENTS.forEach((req) => {
+    if (req.functionsToDetect) {
+      req.functionsToDetect.forEach(({ name }) => {
+        // Regex to find function definitions: "def function_name("
+        const regex = new RegExp(`def\\s+${name}\\s*\\(`, 'g');
+        detected[name] = regex.test(code);
+      });
+    }
+  });
+  
+  return detected;
+}
+
+function TaskSidebar({ code = "" }) {
   // Track which requirements are expanded
   const [expanded, setExpanded] = useState({});
   // Track sub-item checkboxes (format: "req-id_item-index")
   const [subItemsChecked, setSubItemsChecked] = useState({});
+  // Track detected functions in code
+  const [detectedFunctions, setDetectedFunctions] = useState({});
+
+  // ─── Auto-detect implemented functions when code changes ───
+  useEffect(() => {
+    const detected = detectImplementedFunctions(code);
+    setDetectedFunctions(detected);
+
+    // Auto-update checkboxes based on detected functions
+    const newChecked = { ...subItemsChecked };
+    let hasChanges = false;
+
+    REQUIREMENTS.forEach((req) => {
+      if (req.functionsToDetect) {
+        req.functionsToDetect.forEach(({ name }, funcIndex) => {
+          // Map function to its checkbox item index
+          const isImplemented = detected[name];
+          const checkboxKey = `${req.id}_${funcIndex}`;
+
+          // Only update if the state differs from detected state
+          if (newChecked[checkboxKey] !== isImplemented) {
+            newChecked[checkboxKey] = isImplemented;
+            hasChanges = true;
+          }
+        });
+      }
+    });
+
+    if (hasChanges) {
+      setSubItemsChecked(newChecked);
+    }
+  }, [code]);
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -150,6 +225,12 @@ function TaskSidebar() {
               <div className="requirement-subitems">
                 {req.checkboxItems.map((item, idx) => {
                   const itemKey = `${req.id}_${idx}`;
+                  const isChecked = subItemsChecked[itemKey];
+                  
+                  // Get the function name for this item (if it exists)
+                  const funcInfo = req.functionsToDetect?.[idx];
+                  const isAutoDetected = funcInfo && detectedFunctions[funcInfo.name];
+                  
                   return (
                     <div key={idx} className="subitem-checkbox-row">
                       <button
@@ -157,9 +238,16 @@ function TaskSidebar() {
                         onClick={() => toggleSubItemCheck(itemKey)}
                         title={item}
                       >
-                        {subItemsChecked[itemKey] ? "✅" : "☐"}
+                        {isChecked ? "✅" : "☐"}
                       </button>
-                      <span className="subitem-label">{item}</span>
+                      <span className="subitem-label">
+                        {item}
+                        {isAutoDetected && (
+                          <span className="auto-detected-badge" title="Auto-detected from code">
+                            🔍 auto
+                          </span>
+                        )}
+                      </span>
                     </div>
                   );
                 })}

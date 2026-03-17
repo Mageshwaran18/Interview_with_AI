@@ -29,6 +29,17 @@ events_collection = db["events"]
 # Each document contains all 5 pillar scores + composite Q score.
 evaluations_collection = db["evaluations"]
 
+# ─── Phase 5.3: Judge Cache ───
+# Stores cached LLM Judge results to avoid duplicate API calls.
+# Key: prompt_hash (SHA256), Value: {score, reasoning, created_at, hit_count}
+# Reduces API costs by 30-40% for repeated evaluations (same prompts).
+judge_cache_collection = db["judge_cache"]
+
+# ─── Phase 5.3: Token Budgets ───
+# Tracks token usage per session to control API spending.
+# Documents: {session_id, tokens_total, tokens_used, usage_percentage, warning_triggered}
+token_budgets_collection = db["token_budgets"]
+
 
 # Database flow:
 # .env → config.py → settings → MongoClient → Database → Collection

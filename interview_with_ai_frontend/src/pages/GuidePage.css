@@ -337,6 +337,24 @@
   color: #e6edf3;
   line-height: 1.4;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auto-detected-badge {
+  font-size: 10px;
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  white-space: nowrap;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
 }
 
 /* ─── Code Editor Styles ─── */
@@ -645,6 +663,41 @@
   flex-wrap: wrap;
 }
 
+/* ─── Pyodide Status Indicators ─── */
+.pyodide-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #58a6ff;
+  padding: 6px 12px;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: 4px;
+  animation: spin 1s linear infinite;
+}
+
+.pyodide-loading span::first-letter {
+  animation: none;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pyodide-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #f85149;
+  padding: 6px 12px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 4px;
+}
+
 .run-tests-btn {
   background: linear-gradient(135deg, #1f6feb, #388bfd);
   color: #ffffff;
@@ -737,5 +790,112 @@
 .view-results-btn:hover {
   box-shadow: 0 0 16px rgba(88, 166, 255, 0.4);
   transform: scale(1.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* Phase 5.3: Token Budget Indicator Styles                       */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.token-budget-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1c1c1e;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.token-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.token-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.token-label-text {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.token-label-count {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #58a6ff;
+}
+
+.token-bar-background {
+  width: 100%;
+  height: 8px;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.token-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.token-percentage-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ─── Warning Messages ─── */
+.token-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(212, 153, 34, 0.1);
+  border: 1px solid rgba(212, 153, 34, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #d29922;
+}
+
+.warning-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.token-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #f85149;
+  font-weight: 600;
+}
+
+.error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  flex: 1;
+  line-height: 1.3;
 }
 

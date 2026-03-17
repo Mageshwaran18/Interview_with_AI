@@ -33,6 +33,8 @@ class PillarScore(BaseModel):
     sub_metrics: List[SubMetricScore] = Field(default_factory=list, description="Individual metric scores")
     weight: float = Field(..., ge=0, le=1, description="Weight in composite calculation")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="When the score was computed")
+    available: bool = Field(default=True, description="Whether this pillar was successfully evaluated (Phase 5.4)")
+    error: Optional[str] = Field(default=None, description="Error message if pillar evaluation failed (Phase 5.4)")
 
 
 class EvaluationResult(BaseModel):

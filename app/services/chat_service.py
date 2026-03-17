@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from app.config import settings
 from app.database import sessions_collection
 from app.services.event_service import log_event
+from app.services.session_service import SessionService
+from app.utils.retry_utils import retry_with_backoff
 
 
 # ─── Configure the Gemini API ───
@@ -91,9 +93,19 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
     token_count = None
     source = "gemini"
     
-    # ── Step 1: Try Gemini API ──
+    # ── Step 1: Try Gemini API with Retry Logic (Phase 5.4) ──
     try:
-        response = model.generate_content(prompt)
+        # Wrap API call with exponential backoff retry (3 attempts: 1s, 2s, 4s)
+        async def gemini_call():
+            return model.generate_content(prompt)
+        
+        response = await retry_with_backoff(
+            gemini_call,
+            max_retries=2,  # 3 total attempts
+            initial_wait=1.0,
+            backoff_factor=2.0
+        )
+        
         ai_response_text = response.text
         
         usage = response.usage_metadata
@@ -134,6 +146,16 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
         "source": source,
     }
     sessions_collection.insert_one(interaction_log)
+    
+    # ── Step 2.5: Track token usage for this session (Phase 5) ──
+    # This updates the token_budgets collection to track cumulative usage
+    total_tokens = token_count.get("total_tokens", 0) if token_count else 0
+    if total_tokens > 0:
+        try:
+            session_service = SessionService()
+            await session_service.add_tokens(session_id, total_tokens)
+        except Exception as e:
+            print(f"Warning: Failed to track token usage: {e}")
     
     # ── Step 3: Log PROMPT + RESPONSE events to Φ (Phase 2) ──
     # This is the structured Interaction Trace that the Evaluation Engine reads

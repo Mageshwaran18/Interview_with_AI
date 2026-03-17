@@ -5,6 +5,7 @@ from app.routes.event_routes import router as event_router
 from app.routes.test_routes import router as test_router
 from app.routes.evaluation_routes import router as evaluation_router
 from app.routes.dashboard_routes import router as dashboard_router
+from app.routes.session_routes import router as session_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -49,6 +50,9 @@ app.include_router(evaluation_router)
 
 # Include dashboard routes (Phase 4)
 app.include_router(dashboard_router)
+
+# Include session routes (Phase 5 - Session Management)
+app.include_router(session_router)
 
 
 @app.get("/")

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../services/api";
+import TokenBudgetIndicator from "./TokenBudgetIndicator";
 
 /*
  ─── ChatPanel Component ───
@@ -7,6 +8,7 @@ import { sendChatMessage } from "../services/api";
  📚 What this does:
  The AI chat interface on the right side. Users type messages,
  and the AI (Google Gemini) responds. It looks like a messaging app.
+ Includes token budget tracking to monitor API usage (Phase 5.3).
  
  🧠 What you'll learn:
  - useState for managing messages and input
@@ -14,6 +16,7 @@ import { sendChatMessage } from "../services/api";
  - useEffect for side effects (scrolling)
  - async/await for API calls
  - Conditional rendering (showing/hiding typing indicator)
+ - Token budget tracking and warning system
  
  💡 Key Concept: async/await
  When we call the API, it takes time to get a response.
@@ -91,6 +94,9 @@ function ChatPanel({ sessionId }) {
         <h2 className="chat-title">🤖 AI Assistant</h2>
         <span className="chat-model">Gemini 2.0 Flash</span>
       </div>
+
+      {/* Token Budget Indicator (Phase 5.3) */}
+      <TokenBudgetIndicator sessionId={sessionId} />
 
       {/* Message Thread */}
       <div className="chat-messages">

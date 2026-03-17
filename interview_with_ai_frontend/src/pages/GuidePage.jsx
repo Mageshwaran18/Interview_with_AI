@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import TaskSidebar from "../components/TaskSidebar";
 import CodeEditor from "../components/CodeEditor";
 import ChatPanel from "../components/ChatPanel";
@@ -8,34 +9,64 @@ import { sendEvent, triggerEvaluation } from "../services/api";
 import "./GuidePage.css";
 
 /*
- ─── GuidePage Component (Phase 2 Update) ───
+ ─── GuidePage Component (Phase 5 Update) ───
  
- 📚 What's new in Phase 2:
- - Working countdown timer (60:00 → 0:00)
- - SESSION_START event logged on mount
- - SESSION_END event logged on submit or timer expiry
- - TestPanel integrated into the editor area
- - sessionId passed to CodeEditor for diff logging
+ 📚 What's new in Phase 5:
+ - Accepts session_id from URL (/guide/:session_id)
+ - Fetches session details from backend
+ - Uses session's time_limit_minutes for timer
+ - Properly ends session with /api/sessions/{id}/end
+ - SERVER state machine integration (CREATED → IN_PROGRESS → COMPLETED)
 */
-
-const SESSION_DURATION_SECONDS = 60 * 60; // 60 minutes
 
 function GuidePage() {
   const navigate = useNavigate();
+  const { session_id: urlSessionId } = useParams();
+  
+  // Session ID from URL (priority) or fallback to auto-generate
+  const [sessionId] = useState(urlSessionId || "session_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8));
+  
+  const [session, setSession] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [sessionError, setSessionError] = useState(null);
   const [code, setCode] = useState("");
-  const [sessionId] = useState(() => {
-    return "session_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
-  });
-
+  
   // ─── Timer State ───
-  const [timeRemaining, setTimeRemaining] = useState(SESSION_DURATION_SECONDS);
+  // Will be set from session.time_limit_minutes
+  const [timeRemaining, setTimeRemaining] = useState(null);
   const [sessionActive, setSessionActive] = useState(true);
   const timerRef = useRef(null);
-  const sessionActiveRef = useRef(true); // Ref mirror for callbacks
+  const sessionActiveRef = useRef(true);
 
   // ─── Panel Visibility State ───
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  
+  // Fetch session details on mount
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/sessions/${sessionId}`
+        );
+        setSession(response.data);
+        
+        // Convert minutes to seconds for timer
+        const durationSeconds = response.data.time_limit_minutes * 60;
+        setTimeRemaining(durationSeconds);
+        setSessionLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch session:", err);
+        setSessionError("Failed to load session. Redirecting...");
+        setSessionLoading(false);
+        setTimeout(() => navigate("/"), 2000);
+      }
+    };
+    
+    if (urlSessionId) {
+      fetchSession();
+    }
+  }, [sessionId, urlSessionId, navigate]);
 
   // Format seconds → "MM:SS"
   const formatTime = (seconds) => {
@@ -57,38 +88,34 @@ function GuidePage() {
         timerRef.current = null;
       }
 
-      // Log SESSION_END event
+      // Call backend to end session
       try {
-        await sendEvent(sessionId, "SESSION_END", {
-          reason: reason,
-        });
-        // Trigger evaluation pipeline
-        triggerEvaluation(sessionId).catch((err) =>
-          console.warn("Auto-evaluation failed:", err)
+        const response = await axios.post(
+          `http://localhost:8000/api/sessions/${sessionId}/end?reason=${reason}`,
+          {
+            final_code: code,
+          }
         );
+        
+        console.log("Session ended:", response.data);
+        
+        // Trigger evaluation pipeline after a short delay
+        setTimeout(() => {
+          triggerEvaluation(sessionId).catch((err) =>
+            console.warn("Auto-evaluation failed:", err)
+          );
+        }, 1000);
       } catch (error) {
-        console.warn("Failed to log SESSION_END:", error);
+        console.warn("Failed to end session:", error);
       }
     },
-    [sessionId]
+    [sessionId, code]
   );
 
-  // ─── Session Start + Timer (runs ONCE on mount) ───
+  // ─── Session Start + Timer (runs when timeRemaining is set) ───
   useEffect(() => {
-    // Log SESSION_START event
-    sendEvent(sessionId, "SESSION_START", {
-      requirements_list: [
-        "Student Management",
-        "Book Management",
-        "Search & Discovery",
-        "Borrowing System",
-        "History & Records",
-        "Fine Management",
-        "Analytics & Stats",
-      ],
-      time_limit_minutes: 60,
-    }).catch((err) => console.warn("Failed to log SESSION_START:", err));
-
+    if (timeRemaining === null) return; // Wait for session to load
+    
     // Start the countdown timer
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -105,10 +132,10 @@ function GuidePage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array — runs only once
+  }, [timeRemaining]); // Run when timeRemaining is initialized
 
   // Timer warning: red when < 5 minutes
-  const isTimerWarning = timeRemaining < 300;
+  const isTimerWarning = timeRemaining !== null && timeRemaining < 300;
 
   // Calculate dynamic grid columns based on open panels
   const getGridTemplateColumns = () => {
@@ -117,6 +144,47 @@ function GuidePage() {
     if (!leftPanelOpen && rightPanelOpen) return "1fr 350px";
     return "1fr"; // Both closed
   };
+
+  // Loading state
+  if (sessionLoading) {
+    return (
+      <div className="guide-page">
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          background: "#0d1117",
+          color: "#e6edf3",
+          fontSize: "18px",
+        }}>
+          ⏳ Loading session...
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (sessionError) {
+    return (
+      <div className="guide-page">
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          background: "#0d1117",
+          color: "#e6edf3",
+          textAlign: "center",
+        }}>
+          <div>
+            <p style={{ fontSize: "20px", color: "#f85149" }}>❌ {sessionError}</p>
+            <p style={{ color: "#8b949e" }}>Redirecting to home...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="guide-page">
@@ -137,7 +205,7 @@ function GuidePage() {
         <div className="topbar-right">
           <span className="topbar-session">Session: {sessionId.slice(0, 20)}...</span>
           <span className={`topbar-timer ${isTimerWarning ? "timer-warning" : ""}`}>
-            ⏱️ {formatTime(timeRemaining)}
+            ⏱️ {timeRemaining !== null ? formatTime(timeRemaining) : "Loading..."}
           </span>
           {sessionActive && (
             <button className="submit-btn" onClick={() => endSession("submitted")}>
@@ -172,7 +240,7 @@ function GuidePage() {
         {/* Left Panel: Task Requirements */}
         {leftPanelOpen && (
           <aside className="panel panel-left">
-            <TaskSidebar />
+            <TaskSidebar code={code} />
           </aside>
         )}
 
