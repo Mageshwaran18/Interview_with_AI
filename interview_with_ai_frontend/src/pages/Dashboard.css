@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════
+   Dashboard Page Styles
+   ═══════════════════════════════════════════ */
+
+.dashboard-page {
+  min-height: 100vh;
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px;
+  overflow-x: hidden;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #58a6ff, #a371f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.dashboard-subtitle {
+  color: #8b949e;
+  margin-bottom: 32px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.dashboard-subtitle strong {
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.dashboard-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+}
+
+.dashboard-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 200px;
+}
+
+.dashboard-btn-guide {
+  background: linear-gradient(135deg, #238636, #2ea043);
+  color: #fff;
+}
+
+.dashboard-btn-guide:hover {
+  background: linear-gradient(135deg, #26a641, #33d65f);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(36, 134, 58, 0.3);
+}
+
+.dashboard-btn-results {
+  background: linear-gradient(135deg, #58a6ff, #a371f7);
+  color: #fff;
+}
+
+.dashboard-btn-results:hover {
+  background: linear-gradient(135deg, #6db3ff, #b385ff);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+
+.dashboard-btn-logout {
+  background: rgba(248, 81, 73, 0.1);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.dashboard-btn-logout:hover {
+  background: rgba(248, 81, 73, 0.2);
+  border-color: #f85149;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(248, 81, 73, 0.2);
+}
+
+.dashboard-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding-top: 40px;
+  }
+
+  .dashboard-title {
+    font-size: 22px;
+  }
+
+  .dashboard-buttons {
+    flex-direction: column;
+    width: 90%;
+    gap: 12px;
+  }
+
+  .dashboard-btn {
+    min-width: unset;
+    flex: 1;
+  }
+}

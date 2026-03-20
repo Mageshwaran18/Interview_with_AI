@@ -10,7 +10,7 @@ Phase 5.4 Enhancement: Partial Evaluation Handling
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
 from app.database import events_collection, evaluations_collection
 from app.schemas.evaluation_schema import EvaluationResult, PillarScore, SubMetricScore
@@ -247,8 +247,8 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         )
         
         # Store in MongoDB
-        eval_dict = evaluation.dict(by_alias=False)
-        eval_dict["created_at"] = datetime.utcnow()
+        eval_dict = evaluation.model_dump(by_alias=False)
+        eval_dict["created_at"] = datetime.now(timezone.utc)
         
         # Add minimum effort validation report
         eval_dict["minimum_effort_validation"] = {

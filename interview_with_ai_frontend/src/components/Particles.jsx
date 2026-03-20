@@ -102,10 +102,21 @@ const Particles = ({
 }) => {
     const containerRef = useRef(null);
     const mouseRef = useRef({ x: 0, y: 0 });
+    const isVisibleRef = useRef(true); // Track visibility for performance
+    const animationFrameRef = useRef(null); // Store RAF ID for cleanup
 
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
+
+        // ← Use Intersection Observer to pause animation when off-screen
+        const observer = new IntersectionObserver(
+            (entries) => {
+                isVisibleRef.current = entries[0].isIntersecting;
+            },
+            { threshold: 0 }
+        );
+        observer.observe(container);
 
         const renderer = new Renderer({
             dpr: pixelRatio,
@@ -187,33 +198,40 @@ const Particles = ({
         let elapsed = 0;
 
         const update = t => {
-            animationFrameId = requestAnimationFrame(update);
-            const delta = t - lastTime;
-            lastTime = t;
-            elapsed += delta * speed;
+            // ← Skip animation if component is off-screen (improves performance on low-end devices)
+            if (isVisibleRef.current) {
+                animationFrameRef.current = requestAnimationFrame(update);
+                const delta = t - lastTime;
+                lastTime = t;
+                elapsed += delta * speed;
 
-            program.uniforms.uTime.value = elapsed * 0.001;
+                program.uniforms.uTime.value = elapsed * 0.001;
 
-            if (moveParticlesOnHover) {
-                particles.position.x = -mouseRef.current.x * particleHoverFactor;
-                particles.position.y = -mouseRef.current.y * particleHoverFactor;
+                if (moveParticlesOnHover) {
+                    particles.position.x = -mouseRef.current.x * particleHoverFactor;
+                    particles.position.y = -mouseRef.current.y * particleHoverFactor;
+                } else {
+                    particles.position.x = 0;
+                    particles.position.y = 0;
+                }
+
+                if (!disableRotation) {
+                    particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
+                    particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
+                    particles.rotation.z += 0.01 * speed;
+                }
+
+                renderer.render({ scene: particles, camera });
             } else {
-                particles.position.x = 0;
-                particles.position.y = 0;
+                // Still request next frame to resume when visible
+                animationFrameRef.current = requestAnimationFrame(update);
             }
 
-            if (!disableRotation) {
-                particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
-                particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
-                particles.rotation.z += 0.01 * speed;
-            }
-
-            renderer.render({ scene: particles, camera });
-        };
-
-        animationFrameId = requestAnimationFrame(update);
+        animationFrameRef.current = requestAnimationFrame(update);
 
         return () => {
+            observer.disconnect(); // Clean up IntersectionObserver
+            cancelAnimationFrame(animationFrameRef.current);
             window.removeEventListener('resize', resize);
             if (moveParticlesOnHover) {
                 container.removeEventListener('mousemove', handleMouseMove);

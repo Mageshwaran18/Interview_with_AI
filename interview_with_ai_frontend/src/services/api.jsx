@@ -5,6 +5,23 @@ const api = axios.create({
   baseURL: "http://127.0.0.1:8000", // FastAPI backend
 });
 
+// ─── Response Interceptor for Error Handling ───
+// Handle 401 (Unauthorized) - token expired or invalid
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem("token");
+      sessionStorage.clear();
+      // Redirect to signin
+      window.location.href = "/";
+      console.warn("Session expired. Please sign in again.");
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Signup API
 export const signupUser = (data) => {
   return api.post("/auth/signup", data);

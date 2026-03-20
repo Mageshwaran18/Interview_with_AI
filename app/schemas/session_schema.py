@@ -50,7 +50,7 @@ class SessionResponse(BaseModel):
     state: SessionState
     candidate_name: Optional[str]
     time_limit_minutes: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     started_at: Optional[datetime]
     submitted_at: Optional[datetime]
     invite_link: str  # Full URL candidate can click
@@ -82,5 +82,5 @@ class CachedJudgeEvaluation(BaseModel):
     metric_name: str  # e.g., "PSS", "DDS", "AC"
     score: float
     reasoning: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
     call_count: int = 1  # How many times this has been retrieved from cache

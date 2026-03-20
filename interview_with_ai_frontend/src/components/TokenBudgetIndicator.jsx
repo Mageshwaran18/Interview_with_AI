@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
+import "./TokenBudgetIndicator.css";
 
 /**
  * TokenBudgetIndicator Component
@@ -30,15 +31,15 @@ function TokenBudgetIndicator({ sessionId }) {
     if (!sessionId) return;
 
     try {
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/sessions/${sessionId}/budget`
+      const response = await api.get(
+        `/api/sessions/${sessionId}/budget`
       );
       setBudget(response.data);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch token budget:", err);
-      // Don't show error to user, just silently fail
-      setError(null);
+      // Display error message instead of silently failing
+      setError(`Failed to load token budget: ${err.response?.data?.detail || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -55,26 +56,54 @@ function TokenBudgetIndicator({ sessionId }) {
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  if (!budget || loading) {
-    return null; // Don't show anything if loading or no data
+  if (loading) {
+    return null; // Don't show anything while loading
   }
 
-  const { tokens_used, tokens_total, usage_percentage } = budget;
+  // Show error state if fetch failed
+  if (error) {
+    return (
+      <div className="token-budget-indicator" style={{
+        background: '#c74444',
+        padding: '0.75rem',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        color: '#fff',
+        border: '1px solid #a43333',
+        marginBottom: '1rem'
+      }}>
+        ⚠️ {error}
+      </div>
+    );
+  }
 
+  if (!budget) {
+    return null; // Don't show anything if no data
+  }
+
+  const tokens_used = budget.tokens_used || 0;
+  const tokens_total = budget.total_budget || 200000;
+  const usage_percentage = budget.percentage_used || (tokens_used / tokens_total) * 100;
+
+  // Ensure values are numbers
+  const safePercentage = Number(usage_percentage) || 0;
+  
   // Determine color based on usage
   let statusColor = "#3fb950"; // Green
   let statusLabel = "Healthy";
-  if (usage_percentage >= 80) {
+  if (safePercentage >= 80) {
     statusColor = "#f85149"; // Red
     statusLabel = "⚠️ High Usage";
-  } else if (usage_percentage >= 50) {
+  } else if (safePercentage >= 50) {
     statusColor = "#d29922"; // Yellow
     statusLabel = "Moderate";
   }
 
   // Format numbers for display
   const formatNumber = (num) => {
-    return (num / 1000).toFixed(1) + "K";
+    if (!num && num !== 0) return "0K";
+    const numValue = Number(num) || 0;
+    return (numValue / 1000).toFixed(1) + "K";
   };
 
   return (
@@ -92,19 +121,19 @@ function TokenBudgetIndicator({ sessionId }) {
           <div
             className="token-bar-fill"
             style={{
-              width: `${Math.min(usage_percentage, 100)}%`,
+              width: `${Math.min(safePercentage, 100)}%`,
               backgroundColor: statusColor,
             }}
           />
         </div>
 
         <div className="token-percentage-text" style={{ color: statusColor }}>
-          {usage_percentage.toFixed(1)}% {statusLabel}
+          {safePercentage.toFixed(1)}% {statusLabel}
         </div>
       </div>
 
       {/* Warning Message (if usage > 80%) */}
-      {usage_percentage >= 80 && (
+      {safePercentage >= 80 && (
         <div className="token-warning">
           <span className="warning-icon">⚠️</span>
           <span className="warning-text">
@@ -114,7 +143,7 @@ function TokenBudgetIndicator({ sessionId }) {
       )}
 
       {/* Hard Cutoff at 100% */}
-      {usage_percentage >= 100 && (
+      {safePercentage >= 100 && (
         <div className="token-error">
           <span className="error-icon">🛑</span>
           <span className="error-text">

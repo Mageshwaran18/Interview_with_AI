@@ -44,44 +44,68 @@ class PyodideExecutor {
    */
   async initialize() {
     if (PyodideExecutor.pyodideReady && this.pyodide) {
+      console.log("✅ Pyodide already initialized");
       return this.pyodide;
     }
 
     try {
-      // Load Pyodide from CDN
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js";
-      script.onload = async () => {
-        // Pyodide is now available as window.loadPyodide
-        this.pyodide = await window.loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
-        });
-        PyodideExecutor.pyodideReady = true;
-        console.log("✅ Pyodide initialized successfully");
-      };
-      script.onerror = () => {
-        throw new Error("Failed to load Pyodide");
-      };
-      document.head.appendChild(script);
-
-      // Wait for initialization
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (PyodideExecutor.pyodideReady && this.pyodide) {
-            clearInterval(checkInterval);
+      console.log("🔧 Starting Pyodide initialization...");
+      
+      // Check if script is already loaded
+      if (!window.loadPyodide) {
+        console.log("📥 Loading Pyodide script from CDN...");
+        
+        // Load script with proper Promise handling
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js";
+          script.async = true;
+          
+          script.onload = () => {
+            console.log("📦 Pyodide script loaded");
             resolve();
-          }
-        }, 100);
-        // Timeout after 30 seconds
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          throw new Error("Pyodide initialization timeout");
-        }, 30000);
+          };
+          
+          script.onerror = () => {
+            reject(new Error("Failed to load Pyodide CDN script"));
+          };
+          
+          // Add timeout
+          setTimeout(() => {
+            reject(new Error("Pyodide script load timeout (20s)"));
+          }, 20000);
+          
+          document.head.appendChild(script);
+        });
+        
+        // Wait a bit longer for the global to be registered
+        console.log("⏳ Waiting for window.loadPyodide to be registered...");
+        let attempts = 0;
+        while (!window.loadPyodide && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+        
+        if (!window.loadPyodide) {
+          throw new Error("window.loadPyodide not available after script load (checked 20 times)");
+        }
+        console.log("✅ window.loadPyodide is now available");
+      }
+      
+      // Now initialize Pyodide
+      console.log("⚙️ Initializing Pyodide instance...");
+      this.pyodide = await window.loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
       });
-
+      
+      PyodideExecutor.pyodideReady = true;
+      console.log("✅ Pyodide fully initialized and ready");
       return this.pyodide;
+      
     } catch (error) {
-      console.error("Failed to initialize Pyodide:", error);
+      console.error("❌ Pyodide initialization failed:", error.message);
+      console.error("Full error:", error);
+      PyodideExecutor.pyodideReady = false;
       throw error;
     }
   }
@@ -98,21 +122,43 @@ class PyodideExecutor {
     try {
       // Capture stdout
       let output = "";
-      const originalStdout = this.pyodide.sys.stdout;
+      
+      // Safely capture stdout - handle both Pyodide v0.23+ and v0.24+ APIs
+      let originalStdout = null;
+      const hasStdout = this.pyodide.sys && this.pyodide.sys.stdout;
+      
+      if (hasStdout) {
+        originalStdout = this.pyodide.sys.stdout;
+        this.pyodide.sys.stdout = {
+          write: (text) => {
+            output += text;
+            if (stdoutCallback) stdoutCallback(text);
+            return text.length;
+          },
+        };
+      }
 
-      this.pyodide.sys.stdout = {
-        write: (text) => {
-          output += text;
-          if (stdoutCallback) stdoutCallback(text);
-          return text.length;
-        },
-      };
-
-      // Execute code
-      const result = this.pyodide.runPython(code);
+      // Execute code using runPython
+      let result;
+      try {
+        result = this.pyodide.runPython(code);
+      } catch (e) {
+        output += `[Python Error] ${e.message}\n`;
+        if (originalStdout) {
+          this.pyodide.sys.stdout = originalStdout;
+        }
+        return {
+          success: false,
+          output: output,
+          result: null,
+          error: e.message,
+        };
+      }
 
       // Restore stdout
-      this.pyodide.sys.stdout = originalStdout;
+      if (originalStdout && hasStdout) {
+        this.pyodide.sys.stdout = originalStdout;
+      }
 
       return {
         success: true,

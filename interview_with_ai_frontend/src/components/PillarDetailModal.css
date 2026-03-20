@@ -15,10 +15,10 @@
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeInPillar 0.2s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInPillar {
   from {
     opacity: 0;
   }
@@ -39,10 +39,10 @@
   max-height: 88vh;
   width: 90%;
   overflow: hidden;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUpPillar 0.3s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes slideUpPillar {
   from {
     transform: translateY(30px);
     opacity: 0;

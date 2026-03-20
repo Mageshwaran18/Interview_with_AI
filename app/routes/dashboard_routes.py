@@ -60,14 +60,38 @@ async def dashboard_session_detail(session_id: str):
     """
     Get full evaluation detail for a single session.
     Includes all 5 pillar breakdowns with sub-metrics.
+    If evaluation pending, returns session info with pending message.
     """
     try:
         detail = await get_session_detail(session_id)
+        
+        # If no evaluation found, check if session exists and is completed
         if not detail:
+            from app.services.session_service import SessionService
+            session = SessionService.get_session(session_id)
+            
+            if session and session.state in ["COMPLETED", "EVALUATED"]:
+                # Return placeholder evaluation pending message
+                return {
+                    "success": True,
+                    "session": {
+                        "session_id": session_id,
+                        "state": session.state,
+                        "candidate_name": session.candidate_name,
+                        "composite_q_score": 0,
+                        "total_events": 0,
+                        "duration_minutes": session.time_limit_minutes,
+                        "evaluation_status": "PENDING",
+                        "evaluation_message": f"⏳ Evaluation for {session.candidate_name or 'this session'} is pending. The interview was completed at {session.submitted_at or 'an unknown time'}.",
+                        "pillars": [],
+                    }
+                }
+            
             raise HTTPException(
                 status_code=404,
-                detail=f"No evaluation found for session {session_id}"
+                detail=f"No evaluation or completed session found for {session_id}"
             )
+        
         return {"success": True, "session": detail}
     except HTTPException:
         raise

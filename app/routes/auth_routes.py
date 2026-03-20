@@ -27,7 +27,6 @@ def signup(user: SignupRequest):
     Flow:
     Client → Route → Service → DB → Response
     """
-    print(f"Received signup request for password: {user.password}")
     return create_user(user.email, user.password)
 
 

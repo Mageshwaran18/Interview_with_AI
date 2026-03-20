@@ -58,7 +58,7 @@ function Dashboard() {
 
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
         <button
-          onClick={() => navigate("/guide")}
+          onClick={() => navigate("/hiring-manager")}
           style={{
             background: "linear-gradient(135deg, #238636, #2ea043)",
             color: "#fff",

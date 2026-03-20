@@ -33,37 +33,36 @@ class Library:
         self.books = {}
         self.loans = {}
 
-  # Task 1 (Bug-Free): Book Management
-  def add_book(self, isbn, title, author, quantity):
-    """Add a book to the library"""
-    self.books[isbn] = {
-      'title': title,
-      'author': author,
-      'quantity': quantity,
-      'date_added': datetime.now(),
-    }
-    return {'success': True}
+    # Task 1 (Bug-Free): Book Management
+    def add_book(self, isbn, title, author, quantity):
+        """Add a book to the library"""
+        self.books[isbn] = {
+            'title': title,
+            'author': author,
+            'quantity': quantity,
+            'date_added': datetime.now(),
+        }
+        return {'success': True}
 
-  # Task 2 (Bugged): Overdue Detection
-  # BUG: Uses > 14 instead of >= 14 (off-by-one)
-  def get_overdue_loans(self):
-    """List all overdue loans (checked out >= 14 days and not returned)"""
-    overdue = []
-    now = datetime.now()
+    # Task 2: Overdue Detection
+    def get_overdue_loans(self):
+        """List all overdue loans (checked out >= 14 days and not returned)"""
+        overdue = []
+        now = datetime.now()
 
-    for loan in self.loans.values():
-      if not loan['returned']:
-        days_checked_out = (now - loan['checkout_date']).days
-        if days_checked_out > 14:
-          overdue.append(loan)
+        for loan in self.loans.values():
+            if not loan['returned']:
+                days_checked_out = (now - loan['checkout_date']).days
+                if days_checked_out > 14:
+                    overdue.append(loan)
 
-    return overdue
+        return overdue
 
-  # TODO: Implement remaining requirements
+    # TODO: Implement remaining requirements
 
 `;
 
-function CodeEditor({ code, onCodeChange, sessionId }) {
+function CodeEditor({ code, onCodeChange, sessionId, readOnly = false }) {
   // Ref to the Monaco editor instance (for future use like formatting)
   const editorRef = useRef(null);
 
@@ -82,6 +81,9 @@ function CodeEditor({ code, onCodeChange, sessionId }) {
   // Computes diff and sends CODE_SAVE event to Φ
   const saveCodeDiff = useCallback(
     async (newCode) => {
+      // Skip if readonly - don't allow any saves
+      if (readOnly) return;
+
       const oldCode = previousCodeRef.current;
 
       // Skip if no actual change
@@ -111,12 +113,15 @@ function CodeEditor({ code, onCodeChange, sessionId }) {
       // Update the previous code snapshot
       previousCodeRef.current = newCode;
     },
-    [sessionId]
+    [sessionId, readOnly]
   );
 
   // ─── onChange Handler with Debounce ───
   const handleCodeChange = useCallback(
     (value) => {
+      // Don't allow changes if readonly
+      if (readOnly) return;
+
       // Always update the parent state immediately (so typing feels instant)
       onCodeChange(value);
 
@@ -130,7 +135,7 @@ function CodeEditor({ code, onCodeChange, sessionId }) {
         saveCodeDiff(value);
       }, 3000);
     },
-    [onCodeChange, saveCodeDiff]
+    [onCodeChange, saveCodeDiff, readOnly]
   );
 
   // Cleanup debounce timer on unmount
@@ -141,6 +146,13 @@ function CodeEditor({ code, onCodeChange, sessionId }) {
       }
     };
   }, []);
+
+  // Initialize code with STARTER_CODE on mount if empty
+  useEffect(() => {
+    if (!code || code.trim() === "") {
+      onCodeChange(STARTER_CODE);
+    }
+  }, []); // Only run on mount
 
   return (
     <div className="code-editor-container">
@@ -175,6 +187,8 @@ function CodeEditor({ code, onCodeChange, sessionId }) {
           bracketPairColorization: {
             enabled: true,
           },
+          readOnly: readOnly,
+          domReadOnly: readOnly,
         }}
       />
     </div>

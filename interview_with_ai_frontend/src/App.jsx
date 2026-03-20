@@ -6,19 +6,75 @@ import GuidePage from "./pages/GuidePage";
 import ResultsDashboard from "./pages/ResultsDashboard";
 import HiringManagerDashboard from "./pages/HiringManagerDashboard";
 import CandidateOnboarding from "./pages/CandidateOnboarding";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Signin />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/hiring-manager" element={<HiringManagerDashboard />} />
-      <Route path="/session/:session_id" element={<CandidateOnboarding />} />
-      <Route path="/guide/:session_id" element={<GuidePage />} />
-      <Route path="/guide" element={<GuidePage />} />
-      <Route path="/results" element={<ResultsDashboard />} />
-      <Route path="/results/:sessionId" element={<ResultsDashboard />} />
+      <Route
+        path="/"
+        element={
+          <ErrorBoundary>
+            <Signin />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <ErrorBoundary>
+            <Signup />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ErrorBoundary>
+            <Dashboard />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/hiring-manager"
+        element={
+          <ErrorBoundary>
+            <HiringManagerDashboard />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/session/:session_id"
+        element={
+          <ErrorBoundary>
+            <CandidateOnboarding />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/guide/:session_id"
+        element={
+          <ErrorBoundary>
+            <GuidePage />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/results"
+        element={
+          <ErrorBoundary>
+            <ResultsDashboard />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/results/:sessionId"
+        element={
+          <ErrorBoundary>
+            <ResultsDashboard />
+          </ErrorBoundary>
+        }
+      />
     </Routes>
   );
 }

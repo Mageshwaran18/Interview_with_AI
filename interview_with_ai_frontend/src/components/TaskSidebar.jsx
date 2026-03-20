@@ -95,14 +95,21 @@ const REQUIREMENTS = [
  * @returns {Object} Map of function name -> is implemented
  */
 function detectImplementedFunctions(code) {
+  if (!code || typeof code !== 'string') return {};
+  
   const detected = {};
   
   REQUIREMENTS.forEach((req) => {
     if (req.functionsToDetect) {
       req.functionsToDetect.forEach(({ name }) => {
         // Regex to find function definitions: "def function_name("
-        const regex = new RegExp(`def\\s+${name}\\s*\\(`, 'g');
+        // Handles: def add_book(, def add_book (, def add_book\n(, etc.
+        const regex = new RegExp(`def\\s+${name}\\s*\\(`, 'i');
         detected[name] = regex.test(code);
+        
+        if (detected[name]) {
+          console.log(`✅ Function detected: ${name}`);
+        }
       });
     }
   });
@@ -124,28 +131,31 @@ function TaskSidebar({ code = "" }) {
     setDetectedFunctions(detected);
 
     // Auto-update checkboxes based on detected functions
-    const newChecked = { ...subItemsChecked };
-    let hasChanges = false;
+    setSubItemsChecked((prevChecked) => {
+      const newChecked = { ...prevChecked };
+      let hasChanges = false;
 
-    REQUIREMENTS.forEach((req) => {
-      if (req.functionsToDetect) {
-        req.functionsToDetect.forEach(({ name }, funcIndex) => {
-          // Map function to its checkbox item index
-          const isImplemented = detected[name];
-          const checkboxKey = `${req.id}_${funcIndex}`;
+      REQUIREMENTS.forEach((req) => {
+        if (req.functionsToDetect) {
+          req.functionsToDetect.forEach(({ name }, funcIndex) => {
+            // Map function to its checkbox item index
+            const isImplemented = detected[name];
+            const checkboxKey = `${req.id}_${funcIndex}`;
 
-          // Only update if the state differs from detected state
-          if (newChecked[checkboxKey] !== isImplemented) {
-            newChecked[checkboxKey] = isImplemented;
-            hasChanges = true;
-          }
-        });
+            // Only update if the state differs from detected state
+            if (newChecked[checkboxKey] !== isImplemented) {
+              newChecked[checkboxKey] = isImplemented;
+              hasChanges = true;
+            }
+          });
+        }
+      });
+
+      if (hasChanges) {
+        return newChecked;
       }
+      return prevChecked;
     });
-
-    if (hasChanges) {
-      setSubItemsChecked(newChecked);
-    }
   }, [code]);
 
   const toggleExpand = (id) => {

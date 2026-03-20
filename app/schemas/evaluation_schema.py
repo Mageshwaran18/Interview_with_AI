@@ -14,7 +14,7 @@ plus a composite Q score.
 
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class SubMetricScore(BaseModel):
@@ -32,7 +32,7 @@ class PillarScore(BaseModel):
     score: float = Field(..., ge=0, le=100, description="Normalized score 0-100")
     sub_metrics: List[SubMetricScore] = Field(default_factory=list, description="Individual metric scores")
     weight: float = Field(..., ge=0, le=1, description="Weight in composite calculation")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="When the score was computed")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="When the score was computed")
     available: bool = Field(default=True, description="Whether this pillar was successfully evaluated (Phase 5.4)")
     error: Optional[str] = Field(default=None, description="Error message if pillar evaluation failed (Phase 5.4)")
 
@@ -52,7 +52,8 @@ class EvaluationResult(BaseModel):
     )
     total_events: int = Field(default=0, description="Total events in session")
     session_duration_minutes: float = Field(default=0, description="Session duration in minutes")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="When evaluation was created")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="When evaluation was created")
+    details: Optional[Dict[str, Any]] = None
     
     class Config:
         json_encoders = {
@@ -67,9 +68,9 @@ class EvaluationResponse(BaseModel):
     message: str = Field(default="", description="Status message")
     evaluation: Optional[EvaluationResult] = Field(default=None, description="Full evaluation result if successful")
     errors: List[str] = Field(default_factory=list, description="List of errors if any")
+    details: Optional[Dict[str, Any]] = None
     
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-    details: Optional[Dict[str, Any]] = None

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from "../services/api";
 import "./CandidateOnboarding.css";
 
 /*
@@ -30,25 +31,26 @@ function CandidateOnboarding() {
   const [sessionError, setSessionError] = useState(null);
 
   // Fetch session details on component mount
-  React.useEffect(() => {
+  useEffect(() => {
+    const fetchSessionDetails = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(
+          `/api/sessions/${session_id}`
+        );
+        setSession(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch session:", err);
+        setSessionError(
+          "Session not found. Check your invite link and try again."
+        );
+        setLoading(false);
+      }
+    };
+
     fetchSessionDetails();
   }, [session_id]);
-
-  const fetchSessionDetails = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8000/api/sessions/${session_id}`
-      );
-      setSession(response.data);
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to fetch session:", err);
-      setSessionError(
-        "Session not found. Check your invite link and try again."
-      );
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,8 +71,8 @@ function CandidateOnboarding() {
 
     try {
       // Call backend to start the session
-      const response = await axios.post(
-        `http://localhost:8000/api/sessions/${session_id}/start`,
+      const response = await api.post(
+        `/api/sessions/${session_id}/start`,
         {
           session_id: session_id,
           candidate_name: candidateName.trim(),

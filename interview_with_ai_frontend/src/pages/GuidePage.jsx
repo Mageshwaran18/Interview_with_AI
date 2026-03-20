@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import TaskSidebar from "../components/TaskSidebar";
 import CodeEditor from "../components/CodeEditor";
 import ChatPanel from "../components/ChatPanel";
 import TestPanel from "../components/TestPanel";
 import { sendEvent, triggerEvaluation } from "../services/api";
+import api from "../services/api";
 import "./GuidePage.css";
 
 /*
@@ -22,6 +23,8 @@ import "./GuidePage.css";
 function GuidePage() {
   const navigate = useNavigate();
   const { session_id: urlSessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isViewOnly = searchParams.get("view_only") === "true";
   
   // Session ID from URL (priority) or fallback to auto-generate
   const [sessionId] = useState(urlSessionId || "session_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8));
@@ -35,8 +38,16 @@ function GuidePage() {
   // Will be set from session.time_limit_minutes
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [sessionActive, setSessionActive] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // ← Prevent double submission race condition
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false); // ← Confirmation dialog
   const timerRef = useRef(null);
   const sessionActiveRef = useRef(true);
+  const codeRef = useRef(""); // Store code in ref to avoid stale closures
+
+  // Update code ref when code changes
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
 
   // ─── Panel Visibility State ───
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
@@ -45,26 +56,45 @@ function GuidePage() {
   // Fetch session details on mount
   useEffect(() => {
     const fetchSession = async () => {
+      console.log("Fetching session:", sessionId);
       try {
         const response = await axios.get(
           `http://localhost:8000/api/sessions/${sessionId}`
         );
+        console.log("Session loaded:", response.data);
         setSession(response.data);
         
-        // Convert minutes to seconds for timer
-        const durationSeconds = response.data.time_limit_minutes * 60;
-        setTimeRemaining(durationSeconds);
+        // Calculate timer based on session start time (for persistence across refreshes)
+        const totalSeconds = response.data.time_limit_minutes * 60;
+        let remainingSeconds = totalSeconds;
+        
+        if (response.data.started_at) {
+          // Session already started: calculate elapsed time
+          const startTime = new Date(response.data.started_at).getTime();
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - startTime) / 1000);
+          remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+          
+          console.log(`Timer calculation: Total=${totalSeconds}s, Elapsed=${elapsedSeconds}s, Remaining=${remainingSeconds}s`);
+        }
+        
+        setTimeRemaining(remainingSeconds);
         setSessionLoading(false);
       } catch (err) {
-        console.error("Failed to fetch session:", err);
-        setSessionError("Failed to load session. Redirecting...");
+        console.error("Failed to fetch session:", err.response?.data || err.message);
+        setSessionError(
+          `Failed to load session: ${err.response?.data?.detail || err.message}`
+        );
         setSessionLoading(false);
-        setTimeout(() => navigate("/"), 2000);
+        setTimeout(() => navigate("/dashboard"), 3000);
       }
     };
     
     if (urlSessionId) {
       fetchSession();
+    } else {
+      setSessionError("No session ID provided");
+      setSessionLoading(false);
     }
   }, [sessionId, urlSessionId, navigate]);
 
@@ -78,9 +108,12 @@ function GuidePage() {
   // ─── End Session (uses refs to avoid stale closures) ───
   const endSession = useCallback(
     async (reason) => {
-      if (!sessionActiveRef.current) return;
+      // ← GUARD: Double-check if already submitting (prevent race condition)
+      if (!sessionActiveRef.current || submitting) return;
+      
       sessionActiveRef.current = false;
       setSessionActive(false);
+      setSubmitting(true);
 
       // Stop the timer
       if (timerRef.current) {
@@ -91,48 +124,78 @@ function GuidePage() {
       // Call backend to end session
       try {
         const response = await axios.post(
-          `http://localhost:8000/api/sessions/${sessionId}/end?reason=${reason}`,
+          `/api/sessions/${sessionId}/end?reason=${reason}`,
           {
-            final_code: code,
+            final_code: codeRef.current, // Use ref instead of state
           }
         );
         
         console.log("Session ended:", response.data);
+        
+        // ✅ Redirect candidate to results page after submission
+        // Store user type in session storage so ResultsDashboard knows this is a candidate
+        sessionStorage.setItem(`user_type_${sessionId}`, "candidate");
         
         // Trigger evaluation pipeline after a short delay
         setTimeout(() => {
           triggerEvaluation(sessionId).catch((err) =>
             console.warn("Auto-evaluation failed:", err)
           );
-        }, 1000);
+          // Navigate to results after a brief delay
+          navigate(`/results/${sessionId}`);
+        }, 1500);
       } catch (error) {
         console.warn("Failed to end session:", error);
+        // ← Reset submitting state on error so user can retry
+        setSubmitting(false);
       }
     },
-    [sessionId, code]
+    [sessionId, navigate, submitting]
   );
 
-  // ─── Session Start + Timer (runs when timeRemaining is set) ───
+  // ─── Session Start + Timer (runs when timeRemaining is first set) ───
+  // Create stable endSession callback that doesn't depend on variable state
+  const endSessionRef = useRef(null);
   useEffect(() => {
-    if (timeRemaining === null) return; // Wait for session to load
+    endSessionRef.current = endSession;
+  }, [endSession]);
+
+  useEffect(() => {
+    // Only set up timer once, when timeRemaining is first available
+    if (timeRemaining === null) return;
+    
+    // If timer is already running, don't set up again
+    if (timerRef.current !== null) return;
+    
+    console.log("⏱️ Starting timer with", timeRemaining, "seconds remaining");
     
     // Start the countdown timer
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          endSession("timer_expired");
+        const newTime = prev - 1;
+        
+        if (newTime <= 0) {
+          console.log("⏰ Timer expired, ending session");
+          // Call via ref to avoid stale closure
+          if (endSessionRef.current) {
+            endSessionRef.current("timer_expired");
+          }
           return 0;
         }
-        return prev - 1;
+        
+        return newTime;
       });
     }, 1000);
 
-    // Cleanup on unmount
+    // Cleanup: clear interval on unmount
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        console.log("🛑 Clearing timer interval");
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRemaining]); // Run when timeRemaining is initialized
+  }, []); // Empty dependency array - setup only once
 
   // Timer warning: red when < 5 minutes
   const isTimerWarning = timeRemaining !== null && timeRemaining < 300;
@@ -151,15 +214,31 @@ function GuidePage() {
       <div className="guide-page">
         <div style={{
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           height: "100vh",
           background: "#0d1117",
           color: "#e6edf3",
           fontSize: "18px",
+          gap: "20px",
         }}>
-          ⏳ Loading session...
+          <div style={{
+            width: "50px",
+            height: "50px",
+            border: "4px solid #30363d",
+            borderTop: "4px solid #58a6ff",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}></div>
+          <p>⏳ Loading session...</p>
+          <p style={{ fontSize: "12px", color: "#8b949e" }}>Session ID: {sessionId}</p>
         </div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -176,11 +255,30 @@ function GuidePage() {
           background: "#0d1117",
           color: "#e6edf3",
           textAlign: "center",
+          flexDirection: "column",
+          gap: "20px",
+          padding: "40px",
         }}>
           <div>
-            <p style={{ fontSize: "20px", color: "#f85149" }}>❌ {sessionError}</p>
-            <p style={{ color: "#8b949e" }}>Redirecting to home...</p>
+            <p style={{ fontSize: "24px", color: "#f85149", margin: "0 0 10px 0" }}>❌ Error Loading Session</p>
+            <p style={{ color: "#8b949e", fontSize: "16px", margin: "0 0 20px 0" }}>{sessionError}</p>
+            <p style={{ color: "#8b949e", fontSize: "14px" }}>Redirecting to home in 3 seconds...</p>
           </div>
+          <button 
+            onClick={() => navigate("/")}
+            style={{
+              padding: "10px 20px",
+              background: "#238636",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              marginTop: "20px"
+            }}
+          >
+            Go Home Now
+          </button>
         </div>
       </div>
     );
@@ -195,6 +293,7 @@ function GuidePage() {
             className="panel-toggle-btn left-toggle"
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
             title={leftPanelOpen ? "Hide left panel" : "Show left panel"}
+            aria-label={leftPanelOpen ? "Hide left panel with tasks" : "Show left panel with tasks"}
           >
             {leftPanelOpen ? "◀" : "▶"}
           </button>
@@ -208,7 +307,12 @@ function GuidePage() {
             ⏱️ {timeRemaining !== null ? formatTime(timeRemaining) : "Loading..."}
           </span>
           {sessionActive && (
-            <button className="submit-btn" onClick={() => endSession("submitted")}>
+            <button 
+              className="submit-btn" 
+              onClick={() => setShowSubmitConfirm(true)}
+              disabled={isViewOnly || submitting}
+              title={isViewOnly ? "Hiring managers cannot submit sessions" : "Submit your solution"}
+            >
               📤 Submit
             </button>
           )}
@@ -227,6 +331,7 @@ function GuidePage() {
             className="panel-toggle-btn right-toggle"
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
             title={rightPanelOpen ? "Hide right panel" : "Show right panel"}
+            aria-label={rightPanelOpen ? "Hide right panel with chat" : "Show right panel with chat"}
           >
             {rightPanelOpen ? "▶" : "◀"}
           </button>
@@ -240,23 +345,109 @@ function GuidePage() {
         {/* Left Panel: Task Requirements */}
         {leftPanelOpen && (
           <aside className="panel panel-left">
-            <TaskSidebar code={code} />
+            {session && <TaskSidebar code={code} />}
           </aside>
         )}
 
         {/* Center Panel: Code Editor + Test Panel */}
         <section className="panel panel-center">
-          <CodeEditor code={code} onCodeChange={setCode} sessionId={sessionId} />
-          <TestPanel sessionId={sessionId} code={code} />
+          {session && (
+            <>
+              {isViewOnly && (
+                <div style={{
+                  backgroundColor: "#1E3A5F",
+                  color: "#FFA500",
+                  padding: "12px 16px",
+                  textAlign: "center",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  borderBottom: "1px solid #FFA500",
+                }}>
+                  👁️ VIEW-ONLY MODE - You are watching a candidate's session. Editing is disabled.
+                </div>
+              )}
+              <CodeEditor code={code} onCodeChange={setCode} sessionId={sessionId} readOnly={isViewOnly} />
+              {/* ✅ Run Tests button enabled - uses backend fallback if Pyodide fails */}
+              <TestPanel sessionId={sessionId} code={code} readOnly={isViewOnly} />
+            </>
+          )}
         </section>
 
         {/* Right Panel: AI Chat */}
         {rightPanelOpen && (
           <aside className="panel panel-right">
-            <ChatPanel sessionId={sessionId} />
+            {session && <ChatPanel sessionId={sessionId} readOnly={isViewOnly} />}
           </aside>
         )}
       </main>
+
+      {/* Submit Confirmation Dialog */}
+      {showSubmitConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: '#1a1a1a',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '450px',
+            textAlign: 'center',
+            border: '1px solid #444'
+          }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>⚠️ Submit Your Solution?</h3>
+            <p style={{ marginBottom: '1.5rem', color: '#aaa', fontSize: '0.95rem' }}>
+              Once you submit, your session will end and you cannot make further changes. Make sure your solution is complete before submitting.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowSubmitConfirm(false)}
+                disabled={submitting}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #444',
+                  background: 'transparent',
+                  color: '#fff',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  flex: 1,
+                  opacity: submitting ? 0.6 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubmitConfirm(false);
+                  endSession("submitted");
+                }}
+                disabled={submitting}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: submitting ? '#888888' : '#2d9f56',
+                  color: '#fff',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  flex: 1,
+                  fontWeight: 'bold',
+                  opacity: submitting ? 0.7 : 1
+                }}
+              >
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@
   flex-direction: column;
   box-sizing: border-box;
   overflow-x: hidden;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
 }
@@ -713,11 +714,11 @@
   border: 3px solid #21262d;
   border-top-color: #58a6ff;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spinResults 0.8s linear infinite;
   margin-bottom: 16px;
 }
 
-@keyframes spin {
+@keyframes spinResults {
   to { transform: rotate(360deg); }
 }
 

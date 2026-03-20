@@ -17,6 +17,7 @@ Collections used: sessions, token_budgets
 from datetime import datetime, timedelta
 from typing import Optional, List
 import secrets  # For generating secure random session IDs
+import asyncio
 from bson import ObjectId
 
 from app.database import db
@@ -110,13 +111,18 @@ class SessionService:
 
         # Generate invite link
         invite_link = f"http://localhost:5173/session/{session_id}"
+        
+        # Ensure created_at has a valid datetime value, default to now if missing
+        created_at = session_doc.get("created_at")
+        if created_at is None:
+            created_at = datetime.now()
 
         return SessionResponse(
             session_id=session_doc["session_id"],
             state=SessionState(session_doc["state"]),
             candidate_name=session_doc.get("candidate_name"),
             time_limit_minutes=session_doc["time_limit_minutes"],
-            created_at=session_doc["created_at"],
+            created_at=created_at,
             started_at=session_doc.get("started_at"),
             submitted_at=session_doc.get("submitted_at"),
             invite_link=invite_link,
@@ -155,14 +161,28 @@ class SessionService:
 
         # Log SESSION_START event (for Interaction Trace Φ)
         from app.services.event_service import log_event
-        log_event(
-            session_id=request.session_id,
-            event_type="SESSION_START",
-            payload={
-                "candidate_name": request.candidate_name,
-                "time_limit_minutes": session_doc["time_limit_minutes"],
-            },
-        )
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(log_event(
+                    session_id=request.session_id,
+                    event_type="SESSION_START",
+                    payload={
+                        "candidate_name": request.candidate_name,
+                        "time_limit_minutes": session_doc["time_limit_minutes"],
+                    },
+                ))
+            else:
+                loop.run_until_complete(log_event(
+                    session_id=request.session_id,
+                    event_type="SESSION_START",
+                    payload={
+                        "candidate_name": request.candidate_name,
+                        "time_limit_minutes": session_doc["time_limit_minutes"],
+                    },
+                ))
+        except Exception as e:
+            print(f"Warning: Failed to log SESSION_START event: {e}")
 
         return SessionService.get_session(request.session_id)
 
@@ -173,18 +193,33 @@ class SessionService:
         final_code_snapshot: Optional[str] = None,
     ) -> SessionResponse:
         """
-        End a session (submitted by candidate or timer expired).
+        End a session (submitted by candidate, timer expired, or manager termination).
         Transitions session from IN_PROGRESS → COMPLETED.
+        
+        Manager terminations (reason='terminated_by_manager') can end sessions 
+        from any state except EVALUATED (which is final).
         """
         session_doc = sessions_collection.find_one({"session_id": session_id})
 
         if not session_doc:
             raise ValueError(f"Session {session_id} not found")
 
-        if session_doc["state"] != SessionState.IN_PROGRESS.value:
+        current_state = session_doc["state"]
+        
+        # Allow manager terminations from any non-final state
+        is_manager_termination = reason == "terminated_by_manager"
+        
+        if current_state == SessionState.EVALUATED.value:
+            raise ValueError(f"Cannot end session in final state {current_state}")
+        
+        if not is_manager_termination and current_state != SessionState.IN_PROGRESS.value:
             raise ValueError(
-                f"Cannot end session in state {session_doc['state']}"
+                f"Cannot end session in state {current_state}"
             )
+        
+        # Idempotent: if already COMPLETED with same reason, just return it
+        if current_state == SessionState.COMPLETED.value and not is_manager_termination:
+            return SessionService.get_session(session_id)
 
         # Update session: mark as COMPLETED
         now = datetime.now()
@@ -205,15 +240,30 @@ class SessionService:
         session_start = session_doc.get("started_at")
         total_duration = (now - session_start).total_seconds() if session_start else 0
         
-        log_event(
-            session_id=session_id,
-            event_type="SESSION_END",
-            payload={
-                "reason": reason,
-                "total_duration_seconds": total_duration,
-                "final_code_snapshot": final_code_snapshot,
-            },
-        )
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(log_event(
+                    session_id=session_id,
+                    event_type="SESSION_END",
+                    payload={
+                        "reason": reason,
+                        "total_duration_seconds": total_duration,
+                        "final_code_snapshot": final_code_snapshot,
+                    },
+                ))
+            else:
+                loop.run_until_complete(log_event(
+                    session_id=session_id,
+                    event_type="SESSION_END",
+                    payload={
+                        "reason": reason,
+                        "total_duration_seconds": total_duration,
+                        "final_code_snapshot": final_code_snapshot,
+                    },
+                ))
+        except Exception as e:
+            print(f"Warning: Failed to log SESSION_END event: {e}")
 
         return SessionService.get_session(session_id)
 
@@ -231,18 +281,33 @@ class SessionService:
         sessions = []
 
         for doc in session_docs:
-            sessions.append(
-                SessionResponse(
-                    session_id=doc["session_id"],
-                    state=SessionState(doc["state"]),
-                    candidate_name=doc.get("candidate_name"),
-                    time_limit_minutes=doc["time_limit_minutes"],
-                    created_at=doc["created_at"],
-                    started_at=doc.get("started_at"),
-                    submitted_at=doc.get("submitted_at"),
-                    invite_link=f"http://localhost:5173/session/{doc['session_id']}",
+            try:
+                # Handle invalid state values gracefully
+                session_state = doc.get("state", "CREATED")
+                if session_state not in [s.value for s in SessionState]:
+                    session_state = "CREATED"  # Default to CREATED if invalid
+                
+                # Ensure created_at has a valid datetime value, default to now if missing
+                created_at = doc.get("created_at")
+                if created_at is None:
+                    created_at = datetime.now()
+                
+                sessions.append(
+                    SessionResponse(
+                        session_id=doc["session_id"],
+                        state=SessionState(session_state),
+                        candidate_name=doc.get("candidate_name"),
+                        time_limit_minutes=doc.get("time_limit_minutes", 60),
+                        created_at=created_at,
+                        started_at=doc.get("started_at"),
+                        submitted_at=doc.get("submitted_at"),
+                        invite_link=f"http://localhost:5173/session/{doc['session_id']}",
+                    )
                 )
-            )
+            except Exception as e:
+                # Log problematic documents but continue processing others
+                print(f"Warning: Failed to process session {doc.get('session_id')}: {str(e)}")
+                continue
 
         return sessions
 

@@ -1,7 +1,7 @@
 import google.generativeai as genai
 from datetime import datetime, timezone
 from app.config import settings
-from app.database import sessions_collection
+from app.database import chat_logs_collection
 from app.services.event_service import log_event
 from app.services.session_service import SessionService
 from app.utils.retry_utils import retry_with_backoff
@@ -136,7 +136,7 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
             # Re-raise if it's a different error
             raise
     
-    # ── Step 2: Log to MongoDB sessions_collection (Phase 1 backward compat) ──
+    # ── Step 2: Log to MongoDB chat_logs_collection (dedicated chat storage) ──
     interaction_log = {
         "session_id": session_id,
         "timestamp": datetime.now(timezone.utc),
@@ -145,15 +145,14 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
         "token_count": token_count,
         "source": source,
     }
-    sessions_collection.insert_one(interaction_log)
+    chat_logs_collection.insert_one(interaction_log)
     
     # ── Step 2.5: Track token usage for this session (Phase 5) ──
     # This updates the token_budgets collection to track cumulative usage
     total_tokens = token_count.get("total_tokens", 0) if token_count else 0
     if total_tokens > 0:
         try:
-            session_service = SessionService()
-            await session_service.add_tokens(session_id, total_tokens)
+            SessionService.add_tokens(session_id, total_tokens)
         except Exception as e:
             print(f"Warning: Failed to track token usage: {e}")
     

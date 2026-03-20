@@ -8,6 +8,7 @@
   color: #e6edf3;
   padding: 40px 20px;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
 }
 
 /* ─── Header ─── */
@@ -83,10 +84,10 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  animation: fadeInModal 0.2s ease;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInModal {
   from {
     opacity: 0;
   }
@@ -102,10 +103,10 @@
   width: 100%;
   max-width: 400px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.3s ease;
+  animation: slideUpModal 0.3s ease;
 }
 
-@keyframes slideUp {
+@keyframes slideUpModal {
   from {
     transform: translateY(20px);
     opacity: 0;

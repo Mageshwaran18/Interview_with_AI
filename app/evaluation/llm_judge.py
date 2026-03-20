@@ -72,11 +72,17 @@ async def get_cached_judge_result(prompt_hash: str) -> dict | None:
                 {"_id": cached["_id"]},
                 {"$inc": {"hit_count": 1}}
             )
+            # Ensure created_at is timezone-aware for calculation
+            created_at = cached["created_at"]
+            if created_at.tzinfo is None:
+                # Convert naive datetime to timezone-aware
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            
             return {
                 "score": cached["score"],
                 "reasoning": cached["reasoning"],
                 "cached": True,
-                "cache_age": (datetime.now(timezone.utc) - cached["created_at"]).total_seconds()
+                "cache_age": (datetime.now(timezone.utc) - created_at).total_seconds()
             }
     except Exception as e:
         print(f"Warning: Cache lookup failed: {e}")

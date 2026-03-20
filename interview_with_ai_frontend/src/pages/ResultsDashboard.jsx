@@ -57,6 +57,10 @@ function ResultsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ✅ Detect if viewing candidate or hiring manager
+  const userType = sessionId ? sessionStorage.getItem(`user_type_${sessionId}`) : "hiring_manager";
+  const isCandidate = userType === "candidate";
+
   // Load overview data
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -95,9 +99,9 @@ function ResultsDashboard() {
   }, []);
 
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && sessionId !== "thank-you") {
       loadSessionDetail(sessionId);
-    } else {
+    } else if (!sessionId) {
       loadOverview();
     }
   }, [sessionId, loadOverview, loadSessionDetail]);
@@ -117,10 +121,16 @@ function ResultsDashboard() {
     navigate(`/results/${sid}`);
   };
 
-  // Back button
+  // ✅ Smart back button - different behavior for candidate vs hiring manager
   const handleBack = () => {
     setSessionDetail(null);
-    navigate("/results");
+    if (isCandidate) {
+      // Show thank you page for candidates instead of navigating away
+      navigate("/results/thank-you");
+    } else {
+      // Hiring managers go back to dashboard
+      navigate("/hiring-manager");
+    }
   };
 
   // Handle pillar card click
@@ -128,15 +138,178 @@ function ResultsDashboard() {
     setSelectedPillar(pillarData);
   };
 
-  // ─── SESSION DETAIL VIEW ───
-  if (sessionId && sessionDetail) {
-    const qScore = sessionDetail.composite_q_score || 0;
-    const pillarScoresMap = {};
-    (sessionDetail.pillars || []).forEach((p) => {
-      pillarScoresMap[p.pillar_id] = p.score || 0;
-    });
-
+  // ─── THANK YOU PAGE (for candidates) ───
+  if (sessionId === "thank-you") {
     return (
+      <div className="results-dashboard">
+        <header className="rd-header">
+          <div className="rd-header-left">
+            <h1 className="rd-title">✅ Submission Complete</h1>
+          </div>
+        </header>
+
+        <main className="rd-content" style={{ paddingTop: "60px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "70vh" }}>
+          <div style={{
+            maxWidth: "500px",
+            padding: "40px",
+            backgroundColor: "#1a2332",
+            borderRadius: "12px",
+            textAlign: "center",
+            border: "2px solid #3fb950",
+          }}>
+            <div style={{ fontSize: "64px", marginBottom: "20px" }}>🙏</div>
+            <h2 style={{ color: "#3fb950", marginBottom: "16px", fontSize: "24px" }}>
+              Thanks for the Attempt!
+            </h2>
+            <p style={{ color: "#888", marginBottom: "16px", fontSize: "16px", lineHeight: "1.6" }}>
+              We've received your submission. The hiring team will review your solution and further steps will be communicated with you shortly.
+            </p>
+            <p style={{ color: "#666", fontSize: "14px" }}>
+              Thank you for your interest and effort. Good luck! 🚀
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── SESSION DETAIL VIEW ───
+  if (sessionId) {
+    // Show error state if session detail failed to load
+    if (error) {
+      return (
+        <div className="results-dashboard">
+          <header className="rd-header">
+            <div className="rd-header-left">
+              <button className="rd-back-btn" onClick={handleBack}>
+                ← Back
+              </button>
+              <h1 className="rd-title">📊 Session Results</h1>
+            </div>
+          </header>
+
+          <div className="rd-error-banner" style={{ marginTop: "20px", marginLeft: "20px", marginRight: "20px" }}>
+            <span>⚠️ {error}</span>
+            <button onClick={() => loadSessionDetail(sessionId)}>Retry</button>
+          </div>
+
+          {loading && (
+            <div className="rd-loading" style={{ marginTop: "60px" }}>
+              <div className="rd-loading-spinner" />
+              <p>Loading session results...</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (loading && !sessionDetail) {
+      return (
+        <div className="results-dashboard">
+          <header className="rd-header">
+            <div className="rd-header-left">
+              <button className="rd-back-btn" onClick={handleBack}>
+                ← Back
+              </button>
+              <h1 className="rd-title">📊 Session Results</h1>
+            </div>
+          </header>
+
+          <div className="rd-loading" style={{ marginTop: "60px" }}>
+            <div className="rd-loading-spinner" />
+            <p>Loading session results...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // If session detail loaded successfully, show results
+    if (sessionDetail) {
+      // Handle pending evaluation
+      if (sessionDetail.evaluation_status === "PENDING") {
+        return (
+          <div className="results-dashboard">
+            <header className="rd-header">
+              <div className="rd-header-left">
+                <button className="rd-back-btn" onClick={handleBack}>
+                  ← Back
+                </button>
+                <h1 className="rd-title">📊 Session Results</h1>
+              </div>
+              <div className="rd-header-right">
+                <span className="rd-session-badge">{sessionId.slice(0, 28)}...</span>
+              </div>
+            </header>
+
+            <main className="rd-content" style={{ paddingTop: "40px" }}>
+              <div style={{
+                marginBottom: "24px",
+                padding: "24px",
+                backgroundColor: "#1a2332",
+                borderRadius: "8px",
+                border: "2px solid #f0883e",
+                textAlign: "center",
+              }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏳</div>
+                <h2 style={{ color: "#f0883e", marginBottom: "12px", fontSize: "20px" }}>
+                  Evaluation Pending
+                </h2>
+                <p style={{ color: "#888", marginBottom: "16px", fontSize: "14px" }}>
+                  {sessionDetail.evaluation_message || "This session is awaiting evaluation. The evaluation process may take a few moments."}
+                </p>
+                <p style={{ color: "#666", fontSize: "13px" }}>
+                  Candidate: <strong>{sessionDetail.candidate_name || "Unknown"}</strong>
+                </p>
+                <p style={{ color: "#666", fontSize: "13px" }}>
+                  Session Duration: <strong>{sessionDetail.duration_minutes} minutes</strong>
+                </p>
+                <button
+                  onClick={() => loadSessionDetail(sessionId)}
+                  style={{
+                    marginTop: "16px",
+                    padding: "10px 24px",
+                    backgroundColor: "#0066cc",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  🔄 Check Again
+                </button>
+                <button
+                  onClick={handleBack}
+                  style={{
+                    marginTop: "16px",
+                    marginLeft: "12px",
+                    padding: "10px 24px",
+                    backgroundColor: "#333",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  ← Back to Dashboard
+                </button>
+              </div>
+            </main>
+          </div>
+        );
+      }
+      
+      // Show normal results if evaluation is ready
+      const qScore = sessionDetail.composite_q_score || 0;
+      const pillarScoresMap = {};
+      (sessionDetail.pillars || []).forEach((p) => {
+        pillarScoresMap[p.pillar_id] = p.score || 0;
+      });
+
+      return (
       <div className="results-dashboard">
         <header className="rd-header">
           <div className="rd-header-left">
@@ -243,7 +416,8 @@ function ResultsDashboard() {
         {/* Pillar Detail Modal */}
         {selectedPillar && <PillarDetailModal pillar={selectedPillar} onClose={() => setSelectedPillar(null)} />}
       </div>
-    );
+      );
+    }
   }
 
   // ─── OVERVIEW VIEW ───

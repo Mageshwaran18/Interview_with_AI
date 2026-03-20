@@ -1,4 +1,9 @@
-from fastapi import FastAPI
+# Suppress deprecated google.generativeai FutureWarning
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
 from app.routes.auth_routes import router as auth_router
 from app.routes.chat_routes import router as chat_router
 from app.routes.event_routes import router as event_router
@@ -7,10 +12,29 @@ from app.routes.evaluation_routes import router as evaluation_router
 from app.routes.dashboard_routes import router as dashboard_router
 from app.routes.session_routes import router as session_router
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown lifecycle events."""
+    # Startup
+    try:
+        from app.database import db
+        db.command('ping')
+        logger.info("✅ MongoDB connection successful!")
+    except Exception as e:
+        logger.error(f"❌ MongoDB connection failed: {str(e)}")
+    yield
+    # Shutdown (nothing needed)
 
 
 # Create FastAPI app instance
-app = FastAPI(title="Interview With AI Backend")
+app = FastAPI(title="Interview With AI Backend", lifespan=lifespan)
 
 # -----------------------------
 # CORS Configuration
@@ -21,7 +45,6 @@ origins = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
     "http://localhost:3000",
-    "*"
 ]
 
 app.add_middleware(
@@ -58,7 +81,26 @@ app.include_router(session_router)
 @app.get("/")
 def root():
     return {"message": "Interview With AI backend is running"}
+
+
+@app.get("/health")
+def health_check():
+    """Check if backend and database are healthy. Returns 503 if unhealthy."""
+    try:
+        from app.database import db
+        db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        # Return 503 Service Unavailable instead of 200 for failed health checks
+        # This allows load balancers and monitoring tools to detect unhealthy instances
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {str(e)}"
+        )
     
+
+# Startup logic moved to lifespan context manager above
 
 # Application Flow:
 # FastAPI app → include_router() → /auth routes become active

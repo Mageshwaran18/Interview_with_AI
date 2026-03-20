@@ -14,8 +14,10 @@ Endpoints:
 - GET    /api/sessions/{id}/budget  → Check token budget
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from typing import Optional
+import logging
+from pydantic import BaseModel
 
 from app.schemas.session_schema import (
     SessionCreateRequest,
@@ -25,6 +27,13 @@ from app.schemas.session_schema import (
     TokenBudgetInfo,
 )
 from app.services.session_service import SessionService
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Pydantic Models for Request Bodies ─── 
+class EndSessionRequest(BaseModel):
+    final_code: Optional[str] = None
 
 # Create router for session endpoints
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -85,17 +94,22 @@ def start_session(session_id: str, request: SessionOnboardingRequest):
 
 # ─── Candidate: End Session ───
 @router.post("/{session_id}/end", response_model=SessionResponse)
-def end_session(
+async def end_session(
     session_id: str,
-    reason: str = Query("submitted", description="'submitted' or 'timer_expired'"),
-    final_code: Optional[str] = None,
+    request_body: Optional[EndSessionRequest] = None,
+    reason: str = Query("submitted", description="'submitted', 'timer_expired', or 'terminated_by_manager'"),
 ):
     """
-    End a session (either submitted by candidate or timer expiry).
+    End a session (either submitted by candidate, timer expiry, or manager termination).
     Transitions: IN_PROGRESS → COMPLETED
     
-    This also triggers the automatic evaluation pipeline.
+    This automatically triggers the evaluation pipeline after ending.
     """
+    # Extract final_code from request body if provided
+    final_code = None
+    if request_body:
+        final_code = request_body.final_code
+    
     try:
         session = SessionService.end_session(
             session_id=session_id,
@@ -103,14 +117,20 @@ def end_session(
             final_code_snapshot=final_code,
         )
         
-        # TODO: Trigger evaluation pipeline asynchronously
-        # In Phase 4, this would call:
-        # asyncio.create_task(trigger_evaluation(session_id))
+        logger.info(f"Session {session_id} ended with reason: {reason}")
+        
+        # ✅ Automatically trigger evaluation pipeline after session ends
+        # This ensures results are ready when candidate/manager views results
+        from app.services.evaluation_service import run_evaluation
+        import asyncio
+        asyncio.create_task(run_evaluation(session_id))
         
         return session
     except ValueError as e:
+        logger.error(f"Validation error ending session {session_id} (reason: {reason}): {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.error(f"Error ending session {session_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -130,6 +150,7 @@ def list_sessions(
             sessions=sessions,
         )
     except Exception as e:
+        logger.error(f"Error listing sessions: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
