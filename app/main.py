@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.routes.auth_routes import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes.dsa_interview_routes import router as dsa_router
 
 
 # Create FastAPI app instance
@@ -27,6 +28,8 @@ app.add_middleware(
 
 # Include authentication routes
 app.include_router(auth_router)
+# Include DSA interview routes
+app.include_router(dsa_router)
 
 
 @app.get("/")

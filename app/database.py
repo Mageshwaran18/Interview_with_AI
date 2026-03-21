@@ -12,7 +12,7 @@ db = client[settings.DATABASE_NAME]
 # Access (or automatically create) the "users" collection
 # Collection is like a table in SQL
 users_collection = db["users"]
-
+dsa_sessions_collection = db["dsa_sessions"]
 
 # Database flow:
 # .env → config.py → settings → MongoClient → Database → Collection
