@@ -1,0 +1,172 @@
+# Phase 1: Candidate Interface & LLM Proxy
+
+## 🎯 What Are We Building?
+
+Phase 1 is the **foundation** of the GUIDE platform. By the end of this phase, a candidate can:
+
+1. **See a task description** (Library Management System requirements) in a left sidebar
+2. **Write code** in a professional Monaco code editor (same editor used in VS Code!)
+3. **Chat with an AI** (Google Gemini) through a chat panel on the right
+
+Think of it as building a **coding workspace with a built-in AI assistant**.
+
+---
+
+## 📚 Concepts You'll Learn
+
+| Concept | Where Used |
+|---|---|
+| **Monaco Editor** | The code editor component from VS Code, embedded in React |
+| **Three-panel layout** | CSS Grid/Flexbox for sidebar + editor + chat |
+| **REST API proxy** | Backend forwards your messages to Google Gemini |
+| **LLM API integration** | Calling Google Gemini API from Python |
+| **Event logging** | Saving every prompt/response to MongoDB (seed of interaction trace Φ) |
+
+---
+
+## Proposed Changes
+
+### Frontend — New Dependencies
+
+We need to install packages that don't exist yet in the project:
+
+- `@monaco-editor/react` — Embeds the Monaco code editor in React
+- `tailwindcss` — Utility CSS framework for rapid layout building (the guide recommends it)
+- `@tailwindcss/vite` — Vite plugin for Tailwind
+
+> [!IMPORTANT]
+> The guide specifies using TailwindCSS. We'll use **Tailwind v4** (latest) with the Vite plugin for zero-config setup.
+
+---
+
+### Frontend — New Page: GUIDE Session
+
+#### [NEW] [GuidePage.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/GuidePage.jsx)
+
+The main 3-panel session page with:
+
+- **Left Sidebar** — Hard-coded Library Management System requirements as a checklist
+- **Center Panel** — Monaco Editor (`<Editor>` component) configured for Python
+- **Right Panel** — AI Chat interface
+
+#### [NEW] [TaskSidebar.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/TaskSidebar.jsx)
+
+Displays the task requirements:
+- Book Management (CRUD)
+- Member Management
+- Loan Tracking
+- Search functionality
+- Overdue Detection
+- Error Handling
+
+#### [NEW] [CodeEditor.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/CodeEditor.jsx)
+
+Wraps the Monaco Editor:
+- Language: Python
+- Theme: `vs-dark`
+- `onChange` to save code to React state
+- `onMount` to store editor reference
+- Minimap disabled, font size 14
+
+#### [NEW] [ChatPanel.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/components/ChatPanel.jsx)
+
+The AI chat interface:
+- Message thread (user on right, AI on left)
+- Input box + send button
+- Typing indicator while waiting
+- Calls backend `/api/chat` endpoint
+
+#### [NEW] [GuidePage.css](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/GuidePage.css)
+
+Styles for the 3-panel layout using CSS Grid.
+
+---
+
+### Frontend — Route Update
+
+#### [MODIFY] [App.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/App.jsx)
+
+Add a new route:
+```jsx
+<Route path="/guide" element={<GuidePage />} />
+```
+
+#### [MODIFY] [api.jsx](file:///d:/Project/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx)
+
+Add new API function:
+```jsx
+export const sendChatMessage = (sessionId, prompt) =>
+  API.post("/api/chat", { session_id: sessionId, prompt });
+```
+
+---
+
+### Backend — LLM Proxy Route
+
+#### [NEW] [chat_routes.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/routes/chat_routes.py)
+
+New FastAPI router with:
+- `POST /api/chat` — accepts `{ session_id, prompt }`
+- Forwards prompt to Google Gemini API
+- Logs `{ timestamp, prompt, response, token_count }` to MongoDB
+- Returns AI response text
+
+#### [NEW] [chat_service.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/services/chat_service.py)
+
+Business logic:
+- Calls Google Gemini API using the `google-generativeai` SDK
+- Extracts text response and token count
+- Saves interaction log to `sessions` collection in MongoDB
+
+#### [NEW] [chat_schema.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/schemas/chat_schema.py)
+
+Pydantic models:
+- `ChatRequest` — validates `{ session_id: str, prompt: str }`
+- `ChatResponse` — response structure `{ response: str, session_id: str }`
+
+#### [MODIFY] [config.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/config.py)
+
+Add: `GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")`
+
+#### [MODIFY] [database.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/database.py)
+
+Add: `sessions_collection = db["sessions"]` — for storing interaction logs
+
+#### [MODIFY] [main.py](file:///d:/Project/Final_Year_Project/Interview_with_AI/app/main.py)
+
+Add: `app.include_router(chat_router)` to register the new chat routes
+
+#### [MODIFY] [.env](file:///d:/Project/Final_Year_Project/Interview_with_AI/.env)
+
+Add: `GEMINI_API_KEY=your_gemini_api_key_here`
+
+#### Backend dependencies to install:
+- `google-generativeai` — Google Gemini Python SDK
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **LLM Choice**: The guide mentions Claude Sonnet or GPT-4o, but since you've previously used **Google Gemini** in this project (based on conversation history), I'll use the **Gemini API**. Please confirm this is OK, or let me know if you'd prefer OpenAI/Anthropic.
+
+> [!IMPORTANT]
+> **Gemini API Key**: You'll need a Google Gemini API key. You can get one free at [Google AI Studio](https://aistudio.google.com/apikey). Please have it ready before we start coding.
+
+---
+
+## Verification Plan
+
+### Manual Verification (Browser Testing)
+
+1. **Start the backend**: Run `uvicorn app.main:app --reload` from the project root
+2. **Start the frontend**: Run `npm run dev` from `interview_with_ai_frontend/`
+3. **Navigate to** `http://localhost:5173/guide` in the browser
+4. **Verify 3-panel layout**:
+   - Left sidebar shows Library Management System requirements
+   - Center shows Monaco code editor with dark theme
+   - Right shows chat panel with input box
+5. **Test Monaco Editor**: Type Python code → verify syntax highlighting works
+6. **Test Chat Panel**: Type a message and send → verify typing indicator appears → verify AI response arrives and displays
+7. **Test Backend via Swagger**: Open `http://localhost:8000/docs` → test POST `/api/chat` with a test payload
+8. **Verify MongoDB logging**: Check that the `sessions` collection has the logged interaction

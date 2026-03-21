@@ -3,15 +3,20 @@ import { signinUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import ElectricBorder from "../components/ElectricBorder";
 import Particles from "../components/Particles";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 function Signin() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // ← Error state instead of alert()
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignin = async (e) => {
     e.preventDefault();
+    setError(""); // Clear previous errors
+    setIsLoading(true);
 
     try {
       const response = await signinUser({ email, password });
@@ -22,7 +27,10 @@ function Signin() {
       navigate("/dashboard");
 
     } catch (error) {
-      alert(error.response?.data?.detail || "Login failed");
+      // Display error inline instead of alert
+      setError(error.response?.data?.detail || "Login failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,14 +50,29 @@ function Signin() {
         />
       </div>
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <ElectricBorder
-          color="#ffffff"
-          speed={1}
-          chaos={0.12}
-          borderRadius={16}
-        >
-          <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '16px', textAlign: 'center' }}>
+        <ErrorBoundary>
+          <ElectricBorder
+            color="#ffffff"
+            speed={1}
+            chaos={0.12}
+            borderRadius={16}
+          >
+            <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '16px', textAlign: 'center' }}>
             <h2>Signin</h2>
+
+            {error && (
+              <div style={{
+                background: '#c74444',
+                color: '#fff',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                marginBottom: '1rem',
+                fontSize: '0.9rem',
+                border: '1px solid #a43333'
+              }}>
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSignin}>
               <input
@@ -57,7 +80,8 @@ function Signin() {
                 placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                disabled={isLoading}
+                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc', opacity: isLoading ? 0.6 : 1 }}
               />
 
               <br />
@@ -67,36 +91,43 @@ function Signin() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                disabled={isLoading}
+                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc', opacity: isLoading ? 0.6 : 1 }}
               />
 
               <br /><br />
 
               <button
                 type="submit"
+                disabled={isLoading}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  cursor: 'pointer',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
                   borderRadius: '8px',
                   border: 'none',
-                  background: '#ffffff',
+                  background: isLoading ? '#888888' : '#ffffff',
                   color: '#000',
                   fontWeight: 'bold',
                   fontSize: '1rem',
                   letterSpacing: '0.5px',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                  boxShadow: '0 0 10px rgba(255,255,255,0.2)',
+                  opacity: isLoading ? 0.7 : 1
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.6)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  if (!isLoading) {
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.6)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.2)';
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  if (!isLoading) {
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.2)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
                 }}
               >
-                Signin
+                {isLoading ? "Signing in..." : "Signin"}
               </button>
             </form>
 
@@ -104,7 +135,7 @@ function Signin() {
               <p style={{ color: '#aaaaaa', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>
                 Don't have an account?
               </p>
-              <p
+              <button
                 onClick={() => navigate("/signup")}
                 style={{
                   cursor: 'pointer',
@@ -115,7 +146,11 @@ function Signin() {
                   display: 'inline-block',
                   position: 'relative',
                   transition: 'all 0.3s ease',
-                  textShadow: '0 0 10px rgba(255,255,255,0.5)'
+                  textShadow: '0 0 10px rgba(255,255,255,0.5)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  font: 'inherit'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.textShadow = '0 0 20px rgba(255,255,255,1), 0 0 30px rgba(255,255,255,0.8)';
@@ -127,10 +162,11 @@ function Signin() {
                 }}
               >
                 Create one now ✨
-              </p>
+              </button>
             </div>
           </div>
         </ElectricBorder>
+        </ErrorBoundary>
       </div>
     </div>
   );

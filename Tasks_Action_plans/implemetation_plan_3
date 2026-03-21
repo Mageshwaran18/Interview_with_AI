@@ -1,0 +1,124 @@
+Phase 3: Evaluation Engine — Pillar Pipelines
+Build 5 independent Python modules that consume the Interaction Trace Φ and produce normalized 0-100 pillar scores. Combined into a composite GUIDE score: Q = 0.20G + 0.25U + 0.20I + 0.15D + 0.20E.
+
+File Structure
+app/
+├── evaluation/           ← NEW package
+│   ├── __init__.py
+│   ├── pillar_g.py       ← Goal Decomposition
+│   ├── pillar_u.py       ← Usage Efficiency
+│   ├── pillar_i.py       ← Iteration & Refinement
+│   ├── pillar_d.py       ← Detection & Validation
+│   ├── pillar_e.py       ← End Result Quality
+│   └── llm_judge.py      ← Shared LLM-as-Judge utility
+├── schemas/
+│   └── evaluation_schema.py  ← NEW
+├── services/
+│   └── evaluation_service.py ← NEW orchestrator
+├── routes/
+│   └── evaluation_routes.py  ← NEW API route
+├── database.py               ← MODIFY (add evaluations_collection)
+└── main.py                   ← MODIFY (register evaluation_router)
+Proposed Changes
+Evaluation Infrastructure
+[NEW] 
+__init__.py
+Empty init to make evaluation/ a Python package.
+
+[NEW] 
+llm_judge.py
+Shared utility for all LLM-as-Judge calls (Pillars G, U, E). Uses Gemini with temperature=0, structured JSON output, and 3-call majority voting for consistency.
+
+[NEW] 
+evaluation_schema.py
+Pydantic models for:
+
+PillarScore — individual pillar result (score + sub-metrics)
+EvaluationResult — all 5 pillars + composite Q score
+EvaluationResponse — API response shape
+[MODIFY] 
+database.py
+Add: evaluations_collection = db["evaluations"]
+
+Step 3.1 — Pillar G: Goal Decomposition
+[NEW] 
+pillar_g.py
+Metric	How	Source
+PPR (Pre-Planning Ratio)	
+(time_of_first_prompt - session_start) / total_duration
+, scored against 10-20% sweet spot	SESSION_START + first PROMPT timestamps
+RC (Requirement Coverage)	tests_passed / total_tests from last TEST_RUN	TEST_RUN events
+SOS (Subtask Ordering)	Extract features from CODE_SAVE diffs, check dependency order vs reference DAG, -10 per violation from 100	CODE_SAVE events
+DDS (Decomposition Depth)	LLM-as-Judge: provide first 3 prompts, extract subtask nodes, compute overlap with 9-node reference DAG	PROMPT events + LLM call
+Aggregate: G = 0.30×DDS + 0.20×PPR + 0.35×RC + 0.15×SOS
+
+Step 3.2 — Pillar U: Usage Efficiency
+[NEW] 
+pillar_u.py
+Metric	How	Source
+PSS (Prompt Specificity)	LLM-as-Judge: rate each prompt 1-10 on clarity, context, actionability	PROMPT events + LLM call
+PPF (Prompts-per-Feature)	total_prompts / features_implemented, scored against 1.5-2.5 range	PROMPT + TEST_RUN events
+CIR (Context Injection Rate)	prompts_referencing_code / total_prompts, target >70%	PROMPT + CODE_SAVE events
+RP (Redundancy Penalty)	Cosine similarity of consecutive prompts, flag if >0.85, 1 - redundant/total	PROMPT events (SequenceMatcher)
+TER (Token Efficiency)	useful_output_tokens / total_input_tokens	PROMPT + RESPONSE events
+Step 3.3 — Pillar I: Iteration & Refinement
+[NEW] 
+pillar_i.py
+Metric	How	Source
+ERS (Error Recovery Speed)	Avg prompts between failed and next passing TEST_RUN, 1/avg_turns, normalize vs 3-turn benchmark	TEST_RUN + PROMPT events
+AR (Acceptance Rate)	Compare RESPONSE text to next CODE_SAVE. If <10% change, accepted. Score via tent function (peak at 55%)	RESPONSE + CODE_SAVE events
+RR (Regression Rate)	1 - regressions/fixes from TEST_RUN sequences	TEST_RUN event sequences
+Step 3.4 — Pillar D: Detection & Validation
+[NEW] 
+pillar_d.py
+Metric	How	Source
+TFR (Time-to-First-Run)	first_TEST_RUN - session_start, max(0, 1 - minutes/20) × 100	SESSION_START + first TEST_RUN
+BDR (Bug Detection Rate)	Check CODE_SAVE diffs for corrections to 3 seeded bug locations	CODE_SAVE events
+HCR (Hallucination Catch Rate)	Check if candidate used non-existent API from injected hallucination	CODE_SAVE events
+IMPORTANT
+
+For the prototype, BDR and HCR will use simplified heuristics since the starter code doesn't have seeded bugs yet and hallucination injection isn't built. These will use placeholder scoring (default to neutral 50) and can be fully implemented in Phase 5 (Hardening).
+
+Step 3.5 — Pillar E: End Result Quality
+[NEW] 
+pillar_e.py
+Metric	How	Source
+FC (Functional Completeness)	tests_passed / total_tests from final test run	Run test suite on final code
+CQS (Code Quality)	Run pylint on final code, normalize score × 10	SESSION_END code snapshot
+DQ (Documentation Quality)	Comment-to-code ratio + docstring presence check	SESSION_END code snapshot
+AC (Architectural Coherence)	LLM-as-Judge: rate separation of concerns, modularity, design patterns	Final code + LLM call
+API Integration
+[NEW] 
+evaluation_service.py
+Orchestrator that calls all 5 pipelines, computes composite Q score, stores result.
+
+[NEW] 
+evaluation_routes.py
+POST /api/evaluate/{session_id} — triggers full evaluation pipeline. GET /api/evaluate/{session_id} — retrieves stored evaluation result.
+
+[MODIFY] 
+main.py
+Register evaluation_router.
+
+User Review Required
+IMPORTANT
+
+LLM-as-Judge calls use google.generativeai (Gemini) with temperature=0. If Gemini quota is limited, I'll add fallback logic that returns a neutral score (50/100) with a flag. This matches Phase 5 guidance: "If a Judge call fails, mark as 'unavailable' and reweight."
+
+WARNING
+
+Pillar D simplification: Bug Detection Rate (BDR) and Hallucination Catch Rate (HCR) require seeded bugs and hallucination injection, which are Phase 5 features. For now, these will use simplified heuristics or default scores. TFR (Time-to-First-Run) is fully implementable.
+
+IMPORTANT
+
+Redundancy Penalty (RP) uses difflib.SequenceMatcher instead of sentence-transformer embeddings to avoid heavy ML dependencies. This provides similar semantic similarity detection without needing PyTorch/transformers installed.
+
+Verification Plan
+Automated Tests
+POST /api/evaluate/{session_id} with a session that has logged events → verify all 5 pillar scores returned
+Verify evaluation stored in MongoDB evaluations collection
+Verify composite Q score formula: Q = 0.20G + 0.25U + 0.20I + 0.15D + 0.20E
+Manual Verification
+Use the GuidePage to create a real session with code edits + chat + test runs
+Trigger evaluation and inspect per-metric scores
+Verify LLM-as-Judge calls produce valid JSON responses

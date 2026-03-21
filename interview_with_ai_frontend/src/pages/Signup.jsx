@@ -3,21 +3,43 @@ import { signupUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import ElectricBorder from "../components/ElectricBorder";
 import Particles from "../components/Particles";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 function Signup() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // ← Confirm password field
+  const [error, setError] = useState(""); // ← Error state instead of alert()
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setError(""); // Clear previous errors
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    // Validate minimum password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       await signupUser({ email, password });
       navigate("/"); // Go to login page after signup
     } catch (error) {
-      alert(error.response?.data?.detail || "Signup failed");
+      // Display error inline instead of alert
+      setError(error.response?.data?.detail || "Signup failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -37,14 +59,29 @@ function Signup() {
         />
       </div>
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <ElectricBorder
-          color="#ffffff"
-          speed={1}
-          chaos={0.12}
-          borderRadius={16}
-        >
-          <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '16px', textAlign: 'center' }}>
+        <ErrorBoundary>
+          <ElectricBorder
+            color="#ffffff"
+            speed={1}
+            chaos={0.12}
+            borderRadius={16}
+          >
+            <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '16px', textAlign: 'center' }}>
             <h2>Signup</h2>
+
+            {error && (
+              <div style={{
+                background: '#c74444',
+                color: '#fff',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                marginBottom: '1rem',
+                fontSize: '0.9rem',
+                border: '1px solid #a43333'
+              }}>
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSignup}>
               <input
@@ -52,7 +89,8 @@ function Signup() {
                 placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                disabled={isLoading}
+                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc', opacity: isLoading ? 0.6 : 1 }}
               />
 
               <br />
@@ -62,36 +100,54 @@ function Signup() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                disabled={isLoading}
+                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc', opacity: isLoading ? 0.6 : 1 }}
+              />
+
+              <br />
+
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
+                style={{ padding: '0.5rem', margin: '0.5rem 0', borderRadius: '4px', border: '1px solid #ccc', opacity: isLoading ? 0.6 : 1 }}
               />
 
               <br /><br />
 
               <button
                 type="submit"
+                disabled={isLoading}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  cursor: 'pointer',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
                   borderRadius: '8px',
                   border: 'none',
-                  background: '#ffffff',
+                  background: isLoading ? '#888888' : '#ffffff',
                   color: '#000',
                   fontWeight: 'bold',
                   fontSize: '1rem',
                   letterSpacing: '0.5px',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 0 10px rgba(255,255,255,0.2)'
+                  boxShadow: '0 0 10px rgba(255,255,255,0.2)',
+                  opacity: isLoading ? 0.7 : 1
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.6)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  if (!isLoading) {
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(255,255,255,0.6)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.2)';
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  if (!isLoading) {
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.2)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
                 }}
               >
-                Signup
+                {isLoading ? "Signing up..." : "Signup"}
               </button>
             </form>
 
@@ -99,7 +155,7 @@ function Signup() {
               <p style={{ color: '#aaaaaa', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>
                 Already have an account?
               </p>
-              <p
+              <button
                 onClick={() => navigate("/")}
                 style={{
                   cursor: 'pointer',
@@ -110,7 +166,11 @@ function Signup() {
                   display: 'inline-block',
                   position: 'relative',
                   transition: 'all 0.3s ease',
-                  textShadow: '0 0 10px rgba(255,255,255,0.5)'
+                  textShadow: '0 0 10px rgba(255,255,255,0.5)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  font: 'inherit'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.textShadow = '0 0 20px rgba(255,255,255,1), 0 0 30px rgba(255,255,255,0.8)';
@@ -122,10 +182,11 @@ function Signup() {
                 }}
               >
                 Sign in instead 🚀
-              </p>
+              </button>
             </div>
           </div>
         </ElectricBorder>
+        </ErrorBoundary>
       </div>
     </div>
   );

@@ -1,0 +1,107 @@
+/* ═══════════════════════════════════════════
+   Token Budget Indicator Component Styles
+   Standalone CSS for reusable token tracking
+   ═══════════════════════════════════════════ */
+
+.token-budget-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1c1c1e;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.token-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.token-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.token-label-text {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.token-label-count {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #58a6ff;
+}
+
+.token-bar-background {
+  width: 100%;
+  height: 8px;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.token-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.token-percentage-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ─── Warning Messages ─── */
+.token-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(212, 153, 34, 0.1);
+  border: 1px solid rgba(212, 153, 34, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #d29922;
+}
+
+.warning-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.token-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #f85149;
+  font-weight: 600;
+}
+
+.error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  flex: 1;
+  line-height: 1.3;
+}

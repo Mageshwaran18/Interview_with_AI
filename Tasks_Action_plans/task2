@@ -1,0 +1,52 @@
+GUIDE Project — Phase 2: Instrumentation Layer (Interaction Trace Φ)
+Phase 2 Steps
+ Step 2.1 — Define the Interaction Trace Schema
+
+ Create events_collection in 
+database.py
+ Create 
+event_schema.py
+ with Pydantic models for uniform event envelope
+ Create 
+event_service.py
+ for append-only event logging
+ Create 
+event_routes.py
+ with POST /api/events endpoint
+ Refactor 
+chat_service.py
+ to log PROMPT + RESPONSE events to Φ
+ Step 2.2 — Capture Code Diffs on Every Save
+
+ Install diff npm package in frontend
+ Update 
+CodeEditor.jsx
+ — debounced (3s) onDidChangeModelContent listener
+ Compute unified diff (current vs previous snapshot)
+ POST diff payload to /api/events as CODE_SAVE event
+ Add 
+sendEvent
+ function to 
+api.jsx
+ Step 2.3 — Capture Test Execution Events
+
+ Add "Run Tests" button to GuidePage UI
+ Create POST /api/run-tests backend endpoint
+ Backend runs pre-written test suite against candidate code (sandboxed subprocess)
+ Return { tests_total, tests_passed, tests_failed, output_log }
+ Log result as TEST_RUN event in Φ
+ Display test results in a panel/overlay
+ Step 2.4 — Session Lifecycle Events
+
+ Log SESSION_START event when GuidePage mounts
+ Log SESSION_END event when candidate submits or timer expires
+ Add working countdown timer to topbar
+ Auto-submit when timer reaches 0
+ Route + main.py updates
+
+[/] Verification
+
+ Verify event schema in MongoDB
+ Verify code diffs generate correctly
+ Verify test execution works
+ Verify session lifecycle events log

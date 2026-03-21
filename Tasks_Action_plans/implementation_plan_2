@@ -1,0 +1,127 @@
+Phase 2: Instrumentation Layer — Building the Interaction Trace Φ
+🎯 What Are We Building?
+Phase 2 is the brain of the GUIDE system. We're building the Interaction Trace (Φ) — an append-only event log that silently captures everything the candidate does:
+
+Every AI prompt and response (already partially done in Phase 1)
+Every code change (diffs computed when the candidate edits code)
+Every test run result (when the candidate clicks "Run Tests")
+Session start and session end markers
+IMPORTANT
+
+Why Φ matters: In Phase 3, the Evaluation Engine will read Φ to produce the 5 pillar GUIDE scores. If Φ doesn't capture something, we can't evaluate it. Get this right and evaluation becomes straightforward.
+
+📚 Concepts You'll Learn
+Concept	Where Used
+Append-only log	Events are never updated once written — ensures data integrity
+Debouncing	Firing code save events at most every 3 seconds to avoid flooding
+Unified diffs	Computing what changed between two code snapshots
+Subprocess execution	Running test suites in a sandboxed child process
+useEffect cleanup	Properly cleaning up intervals/listeners when components unmount
+Event-driven architecture	Every action becomes a structured event in Φ
+Proposed Changes
+Backend — Event Trace Schema & API
+[NEW] 
+event_schema.py
+Pydantic models for the uniform event envelope — every event in Φ has the same structure:
+
+python
+{
+  "session_id": "session_abc",
+  "event_type": "PROMPT" | "RESPONSE" | "CODE_SAVE" | "TEST_RUN" | "SESSION_START" | "SESSION_END",
+  "timestamp": "2026-03-13T19:00:00Z",
+  "payload": { ... }   # Event-type-specific data
+}
+[NEW] 
+event_service.py
+Business logic for:
+
+log_event() — Writes a single event to Φ (append-only)
+get_session_events() — Retrieves all events for a session (for debugging/dashboard)
+[NEW] 
+event_routes.py
+New FastAPI router:
+
+POST /api/events — Accepts any event type and logs it to Φ
+GET /api/events/{session_id} — Retrieves events for a session
+[NEW] 
+test_routes.py
+POST /api/run-tests — Receives candidate code, runs pre-written pytest suite, returns results, logs TEST_RUN event
+[NEW] 
+test_service.py
+Writes candidate code to a temp file
+Runs pytest via subprocess against a pre-written test suite
+Parses results: { tests_total, tests_passed, tests_failed, output_log }
+The pre-written test suite validates Library Management System requirements
+[NEW] 
+tests/library_tests.py
+Pre-written pytest test suite against the Library Management System requirements (Book CRUD, Member CRUD, Loan Tracking, Search, Overdue, Error Handling)
+
+[MODIFY] 
+database.py
+Add: events_collection = db["events"] — the Interaction Trace Φ collection
+
+[MODIFY] 
+chat_service.py
+Refactor to also log PROMPT and RESPONSE as events in Φ (alongside the existing sessions_collection logging)
+
+[MODIFY] 
+main.py
+Register new routers: event_router, test_router
+
+Frontend — Code Diff Capture & Test Execution
+[MODIFY] 
+CodeEditor.jsx
+Add debounced code save tracking:
+
+Track previousCode in a ref
+On every change (debounced to 3s), compute a diff using the diff npm package
+POST diff to /api/events as a CODE_SAVE event with { filename, diff_text, lines_added, lines_removed, full_snapshot }
+[NEW] 
+TestPanel.jsx
+A "Run Tests" button + results display:
+
+Button triggers POST /api/run-tests with the current code
+Shows test results: passed ✅ / failed ❌ count
+Expandable output log
+[MODIFY] 
+GuidePage.jsx
+Add a working countdown timer (60:00 → 0:00)
+Log SESSION_START event on mount
+Log SESSION_END on submit or timer expiry
+Include TestPanel in the editor header area
+Pass code and sessionId to 
+CodeEditor
+ for diff logging
+[MODIFY] 
+GuidePage.css
+Add styles for test panel, test results, and timer warning state
+
+[MODIFY] 
+api.jsx
+Add new API functions:
+
+sendEvent(sessionId, eventType, payload) — logs any event to Φ
+runTests(sessionId, code) — sends code for test execution
+Frontend dependency to install:
+diff — npm package for computing unified diffs
+User Review Required
+IMPORTANT
+
+Test Execution Safety: The guide specifies sandboxed code execution (Docker or Pyodide). For this prototype, I'll use Python subprocess with a 10-second timeout and restricted file access. Full Docker sandboxing will be added in Phase 5 (Hardening). Is this approach acceptable?
+
+WARNING
+
+Existing sessions_collection: Phase 1 logged chat interactions to sessions_collection. Phase 2 introduces a dedicated events_collection for the structured Interaction Trace Φ. I'll keep both — the old sessions_collection for backward compatibility, and the new events_collection as the canonical Φ. The chat service will log to both.
+
+Verification Plan
+Backend Testing
+POST /api/events with a test event → verify it appears in MongoDB events collection
+GET /api/events/{session_id} → verify events are returned in chronological order
+POST /api/run-tests with valid Library Management code → verify test results returned
+Verify PROMPT/RESPONSE events logged when using /api/chat
+Frontend Testing (Browser)
+Open http://localhost:5173/guide
+Edit code in Monaco → wait 3s → verify CODE_SAVE event logged in MongoDB
+Click "Run Tests" → verify test results display and TEST_RUN event logged
+Verify countdown timer starts at 60:00 and decrements
+Verify SESSION_START logged on page load

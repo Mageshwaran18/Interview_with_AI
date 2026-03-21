@@ -5,6 +5,23 @@ const api = axios.create({
   baseURL: "http://127.0.0.1:8000", // FastAPI backend
 });
 
+// ─── Response Interceptor for Error Handling ───
+// Handle 401 (Unauthorized) - token expired or invalid
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem("token");
+      sessionStorage.clear();
+      // Redirect to signin
+      window.location.href = "/";
+      console.warn("Session expired. Please sign in again.");
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Signup API
 export const signupUser = (data) => {
   return api.post("/auth/signup", data);
@@ -22,6 +39,61 @@ export const getCurrentUser = (token) => {
       Authorization: `Bearer ${token}`,
     },
   });
+};
+
+// ─── Phase 1: AI Chat API ───
+// Sends a message to the backend LLM proxy → Google Gemini
+export const sendChatMessage = (sessionId, prompt) => {
+  return api.post("/api/chat", {
+    session_id: sessionId,
+    prompt: prompt,
+  });
+};
+
+// ─── Phase 2: Event Logging API ───
+// Logs any event to the Interaction Trace Φ
+// Events: CODE_SAVE, TEST_RUN, SESSION_START, SESSION_END
+export const sendEvent = (sessionId, eventType, payload) => {
+  return api.post("/api/events", {
+    session_id: sessionId,
+    event_type: eventType,
+    payload: payload,
+  });
+};
+
+// ─── Phase 2: Test Execution API ───
+// Sends candidate code to be tested against the pre-written test suite
+export const runTests = (sessionId, code) => {
+  return api.post("/api/run-tests", {
+    session_id: sessionId,
+    code: code,
+  });
+};
+
+// ─── Phase 4: Dashboard API ───
+// Get aggregate statistics across all evaluated sessions
+export const getDashboardStats = () => {
+  return api.get("/api/dashboard/stats");
+};
+
+// Get ranked sessions with sorting
+export const getSessionRankings = (limit = 50, sortBy = "composite_q_score", order = "desc") => {
+  return api.get(`/api/dashboard/rankings?limit=${limit}&sort_by=${sortBy}&order=${order}`);
+};
+
+// Get detailed evaluation for a specific session
+export const getSessionDetail = (sessionId) => {
+  return api.get(`/api/dashboard/session/${sessionId}`);
+};
+
+// Get score trend data for chart visualization
+export const getScoreTrends = (limit = 20) => {
+  return api.get(`/api/dashboard/trends?limit=${limit}`);
+};
+
+// Trigger evaluation pipeline for a session
+export const triggerEvaluation = (sessionId) => {
+  return api.post(`/api/evaluate/${sessionId}`);
 };
 
 /*
