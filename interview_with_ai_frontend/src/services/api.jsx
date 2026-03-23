@@ -96,6 +96,8 @@ export const triggerEvaluation = (sessionId) => {
   return api.post(`/api/evaluate/${sessionId}`);
 };
 
+export default api;
+
 /*
 Why create axios instance?
 

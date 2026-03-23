@@ -1,4 +1,5 @@
 import React from "react";
+import "./ErrorBoundary.css";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -21,131 +22,52 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100vh",
-            background: "#0d1117",
-            color: "#e6edf3",
-            padding: "40px",
-            textAlign: "center",
-            fontFamily: "monospace",
-            overflow: "auto",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "800px",
-              textAlign: "left",
-              background: "#161b22",
-              border: "2px solid #f85149",
-              borderRadius: "8px",
-              padding: "20px",
-            }}
-          >
-            <h1 style={{ color: "#f85149", margin: "0 0 10px 0" }}>
-              ❌ Component Error
-            </h1>
-            <p style={{ color: "#8b949e", margin: "0 0 15px 0" }}>
+        <div className="error-boundary-page">
+          <div className="error-boundary-card">
+            <h1 className="error-boundary-heading">❌ Component Error</h1>
+            <p className="error-boundary-desc">
               An unexpected error occurred in the application.
             </p>
 
             {this.state.error && (
-              <details style={{ marginBottom: "15px", cursor: "pointer" }}>
-                <summary
-                  style={{
-                    padding: "10px",
-                    background: "#0d1117",
-                    borderRadius: "4px",
-                    marginBottom: "10px",
-                    color: "#58a6ff",
-                    fontWeight: "bold",
-                  }}
-                >
+              <details className="error-boundary-details">
+                <summary className="error-boundary-summary">
                   Error Details
                 </summary>
-                <pre
-                  style={{
-                    background: "#0d1117",
-                    padding: "10px",
-                    borderRadius: "4px",
-                    overflow: "auto",
-                    color: "#f85149",
-                    fontSize: "12px",
-                  }}
-                >
+                <pre className="error-boundary-pre error-boundary-pre-error">
                   {this.state.error.toString()}
                 </pre>
               </details>
             )}
 
             {this.state.errorInfo && (
-              <details style={{ cursor: "pointer" }}>
-                <summary
-                  style={{
-                    padding: "10px",
-                    background: "#0d1117",
-                    borderRadius: "4px",
-                    marginBottom: "10px",
-                    color: "#58a6ff",
-                    fontWeight: "bold",
-                  }}
-                >
+              <details className="error-boundary-details">
+                <summary className="error-boundary-summary">
                   Stack Trace
                 </summary>
-                <pre
-                  style={{
-                    background: "#0d1117",
-                    padding: "10px",
-                    borderRadius: "4px",
-                    overflow: "auto",
-                    color: "#8b949e",
-                    fontSize: "12px",
-                    maxHeight: "300px",
-                  }}
-                >
+                <pre className="error-boundary-pre error-boundary-pre-stack">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>
             )}
 
-            <div style={{ marginTop: "20px" }}>
+            <div className="error-boundary-actions">
               <button
                 onClick={() => window.location.href = "/"}
-                style={{
-                  padding: "10px 20px",
-                  background: "#238636",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  marginRight: "10px",
-                }}
+                className="error-boundary-btn error-boundary-btn-home"
               >
                 Go Home
               </button>
               <button
                 onClick={() => window.location.reload()}
-                style={{
-                  padding: "10px 20px",
-                  background: "#58a6ff",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
+                className="error-boundary-btn error-boundary-btn-reload"
               >
                 Reload Page
               </button>
             </div>
           </div>
 
-          <p style={{ marginTop: "40px", color: "#8b949e", fontSize: "12px" }}>
+          <p className="error-boundary-hint">
             Check the browser console (F12) for more details.
           </p>
         </div>

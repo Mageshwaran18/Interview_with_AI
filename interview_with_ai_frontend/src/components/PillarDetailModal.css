@@ -1,5 +1,5 @@
 /**
- * PillarDetailModal.css — Styling for detailed pillar feedback modal
+ * PillarDetailModal.css — Red Noir Theme
  */
 
 /* Modal Overlay */
@@ -9,48 +9,31 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  animation: fadeInPillar 0.2s ease-out;
-}
-
-@keyframes fadeInPillar {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  -webkit-backdrop-filter: blur(4px);
+  animation: noir-fade-in 0.2s ease-out;
 }
 
 /* Modal Container */
 .pillar-modal-container {
-  background: #0d1117;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, rgba(25, 25, 35, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-deep), 0 0 60px rgba(239, 35, 60, 0.05);
   display: flex;
   flex-direction: column;
   max-width: 900px;
   max-height: 88vh;
   width: 90%;
   overflow: hidden;
-  animation: slideUpPillar 0.3s ease-out;
-}
-
-@keyframes slideUpPillar {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  animation: noir-slide-up 0.3s ease-out;
 }
 
 /* Header */
@@ -60,7 +43,7 @@
   align-items: center;
   padding: 24px;
   border-bottom: 2px solid;
-  background: rgba(22, 27, 34, 0.5);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .pmd-header-left {
@@ -80,32 +63,33 @@
 
 .pmd-pillar-name {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 600;
-  color: #e6edf3;
+  font-weight: 700;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .pmd-objective {
   margin: 8px 0 0 0;
   font-size: 13px;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
 .pmd-close-btn {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--text-muted);
   font-size: 24px;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
 
 .pmd-close-btn:hover {
-  background: rgba(139, 148, 158, 0.1);
-  color: #e6edf3;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
 }
 
 /* Content */
@@ -118,34 +102,35 @@
   gap: 32px;
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 .pmd-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .pmd-content::-webkit-scrollbar-track {
-  background: rgba(48, 54, 61, 0.4);
+  background: transparent;
 }
 
 .pmd-content::-webkit-scrollbar-thumb {
-  background: rgba(139, 148, 158, 0.5);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
 }
 
 .pmd-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 148, 158, 0.8);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Score Card */
 .pmd-score-card {
-  background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(163, 113, 247, 0.1));
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-red-soft), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(239, 35, 60, 0.15);
+  border-radius: var(--radius-md);
   padding: 24px;
   text-align: center;
 }
 
 .pmd-score-large {
+  font-family: var(--font-display);
   font-size: 48px;
   font-weight: 700;
   line-height: 1;
@@ -156,7 +141,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 1px;
-  color: #8b949e;
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 
@@ -166,24 +151,24 @@
   gap: 8px;
   font-size: 13px;
   padding-top: 16px;
-  border-top: 1px solid rgba(139, 148, 158, 0.2);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .pmd-ks-label {
-  color: #8b949e;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .pmd-ks-text {
-  color: #e6edf3;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 /* Summary Section */
 .pmd-summary-section {
-  background: rgba(13, 17, 23, 0.8);
-  border: 1px solid #30363d;
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   padding: 16px;
 }
 
@@ -191,10 +176,10 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: #e6edf3;
+  color: var(--text-secondary);
 }
 
-/* Strengths Section */
+/* Strengths */
 .pmd-strengths-section {
   display: flex;
   flex-direction: column;
@@ -211,9 +196,9 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: rgba(63, 185, 80, 0.08);
-  border: 1px solid rgba(63, 185, 80, 0.3);
-  border-radius: 8px;
+  background: rgba(63, 185, 80, 0.05);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  border-radius: var(--radius-sm);
 }
 
 .pmd-strength-badge {
@@ -222,7 +207,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
   color: white;
@@ -237,17 +222,17 @@
 .pmd-strength-name {
   font-size: 13px;
   font-weight: 600;
-  color: #3fb950;
+  color: var(--success);
   margin-bottom: 4px;
 }
 
 .pmd-strength-feedback {
   font-size: 12px;
   line-height: 1.5;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
-/* Weaknesses Section */
+/* Weaknesses */
 .pmd-weaknesses-section {
   display: flex;
   flex-direction: column;
@@ -264,9 +249,9 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: rgba(248, 81, 73, 0.08);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.05);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  border-radius: var(--radius-sm);
 }
 
 .pmd-weakness-badge {
@@ -275,7 +260,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
   color: white;
@@ -290,17 +275,17 @@
 .pmd-weakness-name {
   font-size: 13px;
   font-weight: 600;
-  color: #f85149;
+  color: var(--error);
   margin-bottom: 4px;
 }
 
 .pmd-weakness-feedback {
   font-size: 12px;
   line-height: 1.5;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
-/* Metrics Section */
+/* Metrics */
 .pmd-metrics-section {
   display: flex;
   flex-direction: column;
@@ -309,10 +294,11 @@
 
 .pmd-section-title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: #8b949e;
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
@@ -323,21 +309,21 @@
 }
 
 .pmd-metric-card {
-  background: rgba(22, 27, 34, 0.5);
-  border: 1px solid #30363d;
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   transition: all 0.2s ease;
 }
 
 .pmd-metric-card:hover {
-  border-color: #58a6ff;
-  background: rgba(22, 27, 34, 0.8);
+  border-color: var(--accent-red);
+  background: rgba(239, 35, 60, 0.03);
 }
 
 .pmd-metric-card.expanded {
-  border-color: #58a6ff;
-  background: rgba(88, 166, 255, 0.05);
+  border-color: var(--accent-red);
+  background: var(--accent-red-soft);
 }
 
 /* Metric Header */
@@ -358,13 +344,13 @@
 .pmd-metric-name {
   font-size: 13px;
   font-weight: 600;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .pmd-metric-full {
   font-size: 11px;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
 .pmd-metric-right {
@@ -375,6 +361,7 @@
 }
 
 .pmd-metric-score {
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
   min-width: 40px;
@@ -383,13 +370,13 @@
 
 .pmd-metric-expand {
   font-size: 12px;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
 /* Metric Bar */
 .pmd-metric-bar-container {
   height: 6px;
-  background: rgba(48, 54, 61, 0.6);
+  background: rgba(255, 255, 255, 0.06);
   margin: 0 16px 12px 16px;
   border-radius: 3px;
   overflow: hidden;
@@ -404,18 +391,18 @@
 /* Metric Feedback */
 .pmd-metric-feedback {
   padding: 12px 16px;
-  background: rgba(88, 166, 255, 0.05);
-  border-top: 1px solid rgba(88, 166, 255, 0.2);
+  background: var(--accent-red-soft);
+  border-top: 1px solid rgba(239, 35, 60, 0.15);
 }
 
 .pmd-feedback-text {
   margin: 0;
   font-size: 12px;
   line-height: 1.6;
-  color: #e6edf3;
+  color: var(--text-secondary);
 }
 
-/* Actions Section */
+/* Actions */
 .pmd-actions-section {
   display: flex;
   flex-direction: column;
@@ -432,24 +419,24 @@
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border-left: 4px solid;
-  background: rgba(22, 27, 34, 0.5);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .pmd-priority-critical {
-  border-left-color: #f85149;
-  background: rgba(248, 81, 73, 0.08);
+  border-left-color: var(--error);
+  background: rgba(248, 81, 73, 0.05);
 }
 
 .pmd-priority-high {
-  border-left-color: #f0883e;
-  background: rgba(240, 136, 62, 0.08);
+  border-left-color: var(--warning);
+  background: rgba(210, 153, 34, 0.05);
 }
 
 .pmd-priority-medium {
-  border-left-color: #58a6ff;
-  background: rgba(88, 166, 255, 0.08);
+  border-left-color: var(--accent-red);
+  background: var(--accent-red-soft);
 }
 
 .pmd-action-priority {
@@ -460,23 +447,23 @@
   padding: 4px 8px;
   border-radius: 4px;
   text-align: center;
-  background: rgba(139, 148, 158, 0.2);
-  color: #8b949e;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
 }
 
 .pmd-priority-critical .pmd-action-priority {
-  background: rgba(248, 81, 73, 0.2);
-  color: #f85149;
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--error);
 }
 
 .pmd-priority-high .pmd-action-priority {
-  background: rgba(240, 136, 62, 0.2);
-  color: #f0883e;
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--warning);
 }
 
 .pmd-priority-medium .pmd-action-priority {
-  background: rgba(88, 166, 255, 0.2);
-  color: #58a6ff;
+  background: var(--accent-red-soft);
+  color: var(--accent-red);
 }
 
 .pmd-action-content {
@@ -486,14 +473,14 @@
 .pmd-action-title {
   font-size: 13px;
   font-weight: 600;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .pmd-action-description {
   font-size: 12px;
   line-height: 1.5;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
 /* Footer */
@@ -501,25 +488,27 @@
   display: flex;
   gap: 12px;
   padding: 16px 24px;
-  background: rgba(22, 27, 34, 0.5);
-  border-top: 1px solid #30363d;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .pmd-close-action-btn {
   padding: 8px 16px;
-  background: #238636;
+  background: var(--accent-red);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-left: auto;
+  font-family: var(--font-body);
 }
 
 .pmd-close-action-btn:hover {
-  background: #2ea043;
+  background: #ff475d;
+  box-shadow: 0 4px 16px var(--accent-red-glow);
   transform: translateY(-1px);
 }
 

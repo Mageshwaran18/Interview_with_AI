@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "../services/api";
+import StarfieldBackground from "../components/StarfieldBackground";
+import GlassNav from "../components/GlassNav";
+import Toast from "../components/Toast";
 import "./HiringManagerDashboard.css";
 
 /*
@@ -198,24 +201,26 @@ function HiringManagerDashboard() {
 
   return (
     <div className="hiring-manager-dashboard">
+      <StarfieldBackground />
+
+      <GlassNav>
+        <button className="glass-nav-link glass-nav-link-active" onClick={() => navigate('/hiring-manager')}>
+          <span>Sessions</span>
+        </button>
+        <button className="glass-nav-link" onClick={() => navigate('/results')}>
+          <span>Results</span>
+        </button>
+        <button className="glass-nav-link" onClick={() => navigate('/dashboard')}>
+          <span>Home</span>
+        </button>
+      </GlassNav>
+
       {/* Notification Toast */}
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          padding: '1rem',
-          borderRadius: '8px',
-          background: notification.type === 'success' ? '#2d9f56' : '#c74444',
-          color: '#fff',
-          zIndex: 9999,
-          minWidth: '300px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          animation: 'slideInRight 0.3s ease'
-        }}>
-          {notification.message}
-        </div>
-      )}
+      <Toast
+        message={notification?.message}
+        type={notification?.type || 'success'}
+        onClose={() => setNotification(null)}
+      />
 
       {/* Header */}
       <div className="dashboard-header">
@@ -223,15 +228,14 @@ function HiringManagerDashboard() {
           <h1>👔 Hiring Manager Dashboard</h1>
           <p className="subtitle">Manage candidate evaluation sessions</p>
           {loading && sessions.length > 0 && (
-            <p style={{ fontSize: "0.85rem", color: "#888", marginTop: "0.25rem" }}>
+            <p className="syncing-text">
               🔄 Syncing with server...
             </p>
           )}
         </div>
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div className="header-actions">
           <button
-            className="create-session-btn"
-            style={{ backgroundColor: "#0066cc" }}
+            className="create-session-btn create-session-btn-secondary"
             onClick={() => navigate("/results")}
           >
             📊 Overall Results
@@ -304,45 +308,18 @@ function HiringManagerDashboard() {
       {/* Sessions List */}
       <div className="sessions-container">
         {/* View Mode & Filter Controls */}
-        <div style={{
-          marginBottom: "24px",
-          display: "flex",
-          gap: "16px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          backgroundColor: "#1a2332",
-          padding: "16px",
-          borderRadius: "8px",
-        }}>
+        <div className="controls-bar">
           {/* View Mode Toggle */}
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="view-toggle-group">
             <button
               onClick={() => setViewMode("table")}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: viewMode === "table" ? "#0066cc" : "#333",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "500",
-              }}
+              className={`view-toggle-btn ${viewMode === "table" ? "view-toggle-active" : ""}`}
             >
               📊 Table View
             </button>
             <button
               onClick={() => setViewMode("card")}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: viewMode === "card" ? "#0066cc" : "#333",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "500",
-              }}
+              className={`view-toggle-btn ${viewMode === "card" ? "view-toggle-active" : ""}`}
             >
               🃏 Card View
             </button>
@@ -350,17 +327,11 @@ function HiringManagerDashboard() {
 
           {/* Filter by Status */}
           <select
+            id="filter-status"
+            name="filterStatus"
             value={filterState}
             onChange={(e) => setFilterState(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              backgroundColor: "#333",
-              color: "white",
-              border: "1px solid #555",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "13px",
-            }}
+            className="filter-select"
           >
             <option value="ALL">All Status</option>
             <option value="CREATED">⏳ Created (Pending)</option>
@@ -371,17 +342,11 @@ function HiringManagerDashboard() {
 
           {/* Sort By */}
           <select
+            id="sort-by"
+            name="sortBy"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              backgroundColor: "#333",
-              color: "white",
-              border: "1px solid #555",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "13px",
-            }}
+            className="filter-select"
           >
             <option value="created_asc">📅 Created (Earliest First)</option>
             <option value="created_desc">📅 Created (Latest First)</option>
@@ -389,7 +354,7 @@ function HiringManagerDashboard() {
             <option value="name_desc">👤 Candidate Name (Z-A)</option>
           </select>
 
-          <div style={{ marginLeft: "auto", color: "#aaa", fontSize: "13px" }}>
+          <div className="session-count-text">
             Showing {sortedSessions.length} session(s)
           </div>
         </div>
@@ -405,151 +370,59 @@ function HiringManagerDashboard() {
           </div>
         ) : viewMode === "table" ? (
           /* TABLE VIEW */
-          <div style={{ overflowX: "auto" }}>
-            <table style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              backgroundColor: "#0f1419",
-              borderRadius: "8px",
-              overflow: "hidden",
-            }}>
+          <div className="table-wrapper">
+            <table className="sessions-table">
               <thead>
-                <tr style={{ backgroundColor: "#1a2332", borderBottom: "2px solid #333" }}>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Candidate</th>
-                  <th style={{ padding: "12px 16px", textAlign: "center", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Status</th>
-                  <th style={{ padding: "12px 16px", textAlign: "center", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Time Limit</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Created</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Started</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Submitted</th>
-                  <th style={{ padding: "12px 16px", textAlign: "center", color: "#aaa", fontWeight: "600", fontSize: "13px" }}>Action</th>
+                <tr>
+                  <th>Candidate</th>
+                  <th className="text-center">Status</th>
+                  <th className="text-center">Time Limit</th>
+                  <th>Created</th>
+                  <th>Started</th>
+                  <th>Submitted</th>
+                  <th className="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedSessions.map((session, idx) => (
                   <tr
                     key={session.session_id}
-                    style={{
-                      borderBottom: "1px solid #222",
-                      backgroundColor: idx % 2 === 0 ? "transparent" : "#0a0e13",
-                      transition: "background-color 0.2s",
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#1a2332"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "transparent" : "#0a0e13"}
+                    className={`session-row ${idx % 2 !== 0 ? "session-row-alt" : ""}`}
                   >
-                    <td style={{ padding: "12px 16px", color: "#fff", fontSize: "13px", fontWeight: "500" }}>
+                    <td className="td-candidate">
                       {session.candidate_name || "⏳ Pending"}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <span className={getStatusBadgeColor(session.state)} style={{ fontSize: "12px", padding: "4px 8px" }}>
+                    <td className="text-center">
+                      <span className={getStatusBadgeColor(session.state)}>
                         {session.state}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center", color: "#aaa", fontSize: "13px" }}>
+                    <td className="text-center td-muted">
                       {session.time_limit_minutes} min
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#888", fontSize: "12px" }}>
+                    <td className="td-date">
                       {new Date(session.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#888", fontSize: "12px" }}>
+                    <td className="td-date">
                       {session.started_at ? new Date(session.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#888", fontSize: "12px" }}>
+                    <td className="td-date">
                       {session.submitted_at ? new Date(session.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center", display: "flex", gap: "6px", flexDirection: "column", alignItems: "center" }}>
+                    <td className="td-actions">
                       {session.state === "CREATED" && (
                         <>
-                          <button
-                            onClick={() => copyToClipboard(session.invite_link)}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#2c5aa0",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: "500",
-                              width: "100%",
-                            }}
-                          >
-                            🔗 Copy
-                          </button>
-                          <button
-                            onClick={() => handleTerminateSession(session)}
-                            style={{
-                              padding: "5px 10px",
-                              backgroundColor: "#8b0000",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              fontWeight: "500",
-                              width: "100%",
-                            }}
-                            title="Terminate this session"
-                          >
-                            🗑️ Terminate
-                          </button>
+                          <button className="action-btn action-btn-copy" onClick={() => copyToClipboard(session.invite_link)}>🔗 Copy</button>
+                          <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate</button>
                         </>
                       )}
                       {(session.state === "COMPLETED" || session.state === "EVALUATED") && (
-                        <button
-                          onClick={() => {
-                            sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager");
-                            navigate(`/results/${session.session_id}`);
-                          }}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#0a6b2c",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            fontWeight: "500",
-                            width: "100%",
-                          }}
-                        >
-                          📊 Results
-                        </button>
+                        <button className="action-btn action-btn-results" onClick={() => { sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager"); navigate(`/results/${session.session_id}`); }}>📊 Results</button>
                       )}
                       {session.state === "IN_PROGRESS" && (
                         <>
-                          <button
-                            onClick={() => navigate(`/guide/${session.session_id}?view_only=true`)}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#6b5a0a",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: "500",
-                              width: "100%",
-                            }}
-                          >
-                            👁️ Watch
-                          </button>
-                          <button
-                            onClick={() => handleTerminateSession(session)}
-                            style={{
-                              padding: "5px 10px",
-                              backgroundColor: "#8b0000",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              fontWeight: "500",
-                              width: "100%",
-                            }}
-                            title="Terminate this session"
-                          >
-                            🗑️ Terminate
-                          </button>
+                          <button className="action-btn action-btn-watch" onClick={() => navigate(`/guide/${session.session_id}?view_only=true`)}>👁️ Watch</button>
+                          <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate</button>
                         </>
                       )}
                     </td>
@@ -605,81 +478,20 @@ function HiringManagerDashboard() {
                   )}
                 </div>
 
-                <div className="card-footer" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div className="card-footer">
                   {session.state === "CREATED" && (
                     <>
-                      <button
-                        className="copy-link-btn"
-                        onClick={() => copyToClipboard(session.invite_link)}
-                        title="Click to copy invite link"
-                      >
-                        🔗 Copy Link
-                      </button>
-                      <button
-                        style={{
-                          padding: "8px 16px",
-                          backgroundColor: "#8b0000",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          fontWeight: "500",
-                        }}
-                        onClick={() => handleTerminateSession(session)}
-                        title="Terminate this session"
-                      >
-                        🗑️ Terminate Session
-                      </button>
+                      <button className="copy-link-btn" onClick={() => copyToClipboard(session.invite_link)} title="Click to copy invite link">🔗 Copy Link</button>
+                      <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate Session</button>
                     </>
                   )}
-                  {session.state === "COMPLETED" && (
-                    <button
-                      className="view-results-btn"
-                      onClick={() => {
-                        sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager");
-                        navigate(`/results/${session.session_id}`);
-                      }}
-                    >
-                      📊 View Results
-                    </button>
-                  )}
-                  {session.state === "EVALUATED" && (
-                    <button
-                      className="view-results-btn"
-                      onClick={() => {
-                        sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager");
-                        navigate(`/results/${session.session_id}`);
-                      }}
-                    >
-                      📊 View Results
-                    </button>
+                  {(session.state === "COMPLETED" || session.state === "EVALUATED") && (
+                    <button className="view-results-btn" onClick={() => { sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager"); navigate(`/results/${session.session_id}`); }}>📊 View Results</button>
                   )}
                   {session.state === "IN_PROGRESS" && (
                     <>
-                      <button
-                        className="view-details-btn"
-                        onClick={() => navigate(`/guide/${session.session_id}?view_only=true`)}
-                        title="View candidate's active session (read-only)"
-                      >
-                        👁️ View Live
-                      </button>
-                      <button
-                        style={{
-                          padding: "8px 16px",
-                          backgroundColor: "#8b0000",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          fontWeight: "500",
-                        }}
-                        onClick={() => handleTerminateSession(session)}
-                        title="Terminate this session"
-                      >
-                        🗑️ Terminate Session
-                      </button>
+                      <button className="view-details-btn" onClick={() => navigate(`/guide/${session.session_id}?view_only=true`)} title="View candidate's active session (read-only)">👁️ View Live</button>
+                      <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate Session</button>
                     </>
                   )}
                 </div>

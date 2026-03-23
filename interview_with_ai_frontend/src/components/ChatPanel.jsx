@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { sendChatMessage, sendEvent } from "../services/api";
 import TokenBudgetIndicator from "./TokenBudgetIndicator";
+import "./ChatPanel.css";
 
 /*
  ─── ChatPanel Component ───
@@ -10,31 +11,14 @@ import TokenBudgetIndicator from "./TokenBudgetIndicator";
  and the AI (Google Gemini) responds. It looks like a messaging app.
  Includes token budget tracking to monitor API usage (Phase 5.3).
  
- 🧠 What you'll learn:
- - useState for managing messages and input
- - useRef for auto-scrolling to bottom
- - useEffect for side effects (scrolling)
- - async/await for API calls
- - Conditional rendering (showing/hiding typing indicator)
- - Token budget tracking and warning system
- - localStorage for persistent chat history across page refreshes
- 
  💾 Chat Persistence (Phase 5.4):
  - All messages are automatically saved to localStorage
  - Uses key: "chat_{sessionId}" 
  - Messages persist across page refreshes, tab closures, etc.
  - User can manually clear chat with 🗑️ button
- - On page refresh, chat history is automatically restored
- 
- 💡 Key Concept: async/await
- When we call the API, it takes time to get a response.
- 'async/await' lets us wait for the response without freezing the UI.
-   const response = await sendChatMessage(...)  ← waits here
-   // ... then continues after response arrives
 */
 
 function ChatPanel({ sessionId, readOnly = false }) {
-  // Initial state: greeting message
   const initialMessages = [
     {
       role: "ai",
@@ -43,8 +27,6 @@ function ChatPanel({ sessionId, readOnly = false }) {
     },
   ];
 
-  // State: array of message objects { role: "user"|"ai", content: "..." }
-  // Load from localStorage if available, otherwise use initial greeting
   const [messages, setMessages] = useState(() => {
     try {
       const savedMessages = localStorage.getItem(`chat_${sessionId}`);
@@ -56,17 +38,14 @@ function ChatPanel({ sessionId, readOnly = false }) {
   });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false); // ← Confirmation dialog state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Ref to the bottom of messages for auto-scroll
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Persist messages to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(`chat_${sessionId}`, JSON.stringify(messages));
@@ -75,35 +54,21 @@ function ChatPanel({ sessionId, readOnly = false }) {
     }
   }, [messages, sessionId]);
 
-  // Send message to AI
   const handleSend = async () => {
-    // Prevent sending if readonly
     if (readOnly) return;
-
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return; // Don't send empty or while loading
+    if (!trimmed || isLoading) return;
 
-    // Step 1: Add user's message to the chat
     const userMessage = { role: "user", content: trimmed };
     setMessages((prev) => [...prev, userMessage]);
-    setInput(""); // Clear input box
-
-    // Note: PROMPT event is logged by the backend in chat_service.py
-
-    // Step 2: Show typing indicator
+    setInput("");
     setIsLoading(true);
 
     try {
-      // Step 3: Send to backend → Gemini API
       const response = await sendChatMessage(sessionId, trimmed);
-
-      // Step 4: Add AI's response to chat
       const aiMessage = { role: "ai", content: response.data.response };
       setMessages((prev) => [...prev, aiMessage]);
-
-      // Note: RESPONSE event is logged by the backend in chat_service.py
     } catch (error) {
-      // If something goes wrong, show an error message in chat
       const errorMessage = {
         role: "ai",
         content: "⚠️ Sorry, I encountered an error. Please try again.",
@@ -111,23 +76,20 @@ function ChatPanel({ sessionId, readOnly = false }) {
       setMessages((prev) => [...prev, errorMessage]);
       console.error("Chat error:", error);
     } finally {
-      // Step 5: Hide typing indicator (runs whether success or error)
       setIsLoading(false);
     }
   };
 
-  // Handle Enter key to send message
   const handleKeyDown = (e) => {
-    if (readOnly) return; // Don't allow keyboard input in readonly
+    if (readOnly) return;
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Prevent newline
+      e.preventDefault();
       handleSend();
     }
   };
 
-  // Clear chat history
   const handleClearChat = () => {
-    setShowClearConfirm(true); // Show confirmation dialog instead of browser confirm()
+    setShowClearConfirm(true);
   };
 
   const confirmClearChat = () => {
@@ -140,39 +102,21 @@ function ChatPanel({ sessionId, readOnly = false }) {
     <div className="chat-panel">
       {/* Chat Header */}
       <div className="chat-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+        <div className="chat-header-left">
           <h2 className="chat-title">🤖 AI Assistant</h2>
           <span className="chat-model">Gemini 2.5 Flash</span>
         </div>
         <button
           onClick={handleClearChat}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#8b949e",
-            cursor: "pointer",
-            fontSize: "16px",
-            padding: "4px 8px",
-            borderRadius: "4px",
-            transition: "all 0.2s",
-          }}
+          className="chat-clear-btn"
           aria-label="Clear chat history"
-          title="Clear chat history"
-          onMouseEnter={(e) => {
-            e.target.style.background = "rgba(88, 166, 255, 0.1)";
-            e.target.style.color = "#58a6ff";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = "none";
-            e.target.style.color = "#8b949e";
-          }}
           title="Clear chat history"
         >
           🗑️
         </button>
       </div>
 
-      {/* Token Budget Indicator (Phase 5.3) */}
+      {/* Token Budget Indicator */}
       <TokenBudgetIndicator sessionId={sessionId} />
 
       {/* Message Thread */}
@@ -203,27 +147,20 @@ function ChatPanel({ sessionId, readOnly = false }) {
           </div>
         )}
 
-        {/* Invisible element for auto-scrolling */}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
       <div className="chat-input-area">
         {readOnly ? (
-          <div style={{
-            padding: "16px",
-            backgroundColor: "#1a1a2e",
-            borderTop: "1px solid #444",
-            textAlign: "center",
-            color: "#888",
-            fontSize: "13px",
-            fontWeight: "500"
-          }}>
+          <div className="chat-readonly-notice">
             🔒 This is a view-only session. Chat is disabled.
           </div>
         ) : (
           <>
             <textarea
+              id="chat-message-input"
+              name="chatMessage"
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -245,57 +182,22 @@ function ChatPanel({ sessionId, readOnly = false }) {
 
       {/* Clear Chat Confirmation Dialog */}
       {showClearConfirm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: '#1a1a1a',
-            borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '400px',
-            textAlign: 'center',
-            border: '1px solid #444'
-          }}>
-            <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>⚠️ Clear Chat History?</h3>
-            <p style={{ marginBottom: '1.5rem', color: '#aaa', fontSize: '0.95rem' }}>
+        <div className="chat-confirm-overlay">
+          <div className="chat-confirm-dialog">
+            <h3 className="chat-confirm-title">⚠️ Clear Chat History?</h3>
+            <p className="chat-confirm-text">
               This will permanently delete all messages. This action cannot be undone.
             </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <div className="chat-confirm-actions">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: '1px solid #444',
-                  background: 'transparent',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  flex: 1
-                }}
+                className="chat-confirm-cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmClearChat}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: '#c74444',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  flex: 1,
-                  fontWeight: 'bold'
-                }}
+                className="chat-confirm-delete"
               >
                 Clear
               </button>

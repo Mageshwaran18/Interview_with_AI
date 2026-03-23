@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════
-   Token Budget Indicator Component Styles
-   Standalone CSS for reusable token tracking
+   Token Budget Indicator — Red Noir Theme
    ═══════════════════════════════════════════ */
 
 .token-budget-indicator {
@@ -8,10 +7,20 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: #1c1c1e;
-  border: 1px solid #30363d;
-  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   font-size: 12px;
+}
+
+.token-budget-indicator-error {
+  background: rgba(248, 81, 73, 0.1);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--error);
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  margin-bottom: 8px;
 }
 
 .token-bar-container {
@@ -25,25 +34,25 @@
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  color: #e6edf3;
+  color: var(--text-secondary);
 }
 
 .token-label-text {
   font-size: 12px;
-  color: #8b949e;
+  color: var(--text-muted);
 }
 
 .token-label-count {
-  font-family: 'Courier New', monospace;
+  font-family: 'Consolas', monospace;
   font-size: 11px;
-  color: #58a6ff;
+  color: var(--accent-red);
 }
 
 .token-bar-background {
   width: 100%;
   height: 8px;
-  background: #0d1117;
-  border: 1px solid #21262d;
+  background: var(--bg-deepblack);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -66,11 +75,11 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: rgba(212, 153, 34, 0.1);
-  border: 1px solid rgba(212, 153, 34, 0.3);
-  border-radius: 4px;
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid rgba(210, 153, 34, 0.25);
+  border-radius: var(--radius-sm);
   font-size: 11px;
-  color: #d29922;
+  color: var(--warning);
 }
 
 .warning-icon {
@@ -89,10 +98,10 @@
   gap: 8px;
   padding: 8px;
   background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 4px;
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  border-radius: var(--radius-sm);
   font-size: 11px;
-  color: #f85149;
+  color: var(--error);
   font-weight: 600;
 }
 

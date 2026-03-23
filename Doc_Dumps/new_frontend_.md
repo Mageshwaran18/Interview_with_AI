@@ -465,3 +465,69 @@ Phase 6 — Polish & Responsive
 - **Backend code** — zero changes
 - **Routing structure** — zero changes
 - **Component logic** — zero changes (style only)
+
+---
+
+## ✅ Implementation Changelog (2026-03-21)
+
+> All phases executed. Build passes (165 modules, 0 errors). 32 files modified/created.
+
+### Phase 1 — Foundation
+| File | Action |
+|------|--------|
+| `src/index.css` | Rewritten — tokens, fonts (Inter+Manrope), reset, scrollbar, `noir-*` animations |
+| `src/App.css` | Stripped — globals centralized in index.css |
+
+### Phase 2 — Shared Components (all NEW)
+| Component | Files |
+|-----------|-------|
+| StarfieldBackground | `.jsx` + `.css` — CSS-only animated stars, replaces Canvas Particles |
+| ShinyButton | `.jsx` + `.css` — pill button, 3 variants, conic-gradient border |
+| GlassCard | `.jsx` + `.css` — glassmorphic card, hover red glow |
+| GlassNav | `.jsx` + `.css` — floating pill navbar, backdrop blur |
+| Toast | `.jsx` + `.css` — notification component, replaces `alert()` |
+
+### Phase 3 — Auth Pages
+| File | Changes |
+|------|---------|
+| `Signin.jsx` + `.css` | StarfieldBackground + GlassCard + ShinyButton, gradient heading, pill inputs |
+| `Signup.jsx` + `.css` | Same as Signin + password strength bar |
+
+### Phase 4 — Dashboard Pages
+| File | Changes |
+|------|---------|
+| `Dashboard.jsx` + `.css` | GlassNav, bento grid GlassCards, hero section |
+| `HiringManagerDashboard.jsx` + `.css` | GlassNav, Toast (replaces inline notifications), glass session cards |
+| `CandidateOnboarding.jsx` + `.css` | StarfieldBackground across all states, glass cards, red accents |
+
+### Phase 5 — Core Experience
+| File | Changes |
+|------|---------|
+| `GuidePage.css` | Removed `#root` override, glassmorphic topbar, tokens throughout |
+| `ResultsDashboard.css` | Glassmorphic header, token swap, red accent rankings |
+
+### Phase 6 — Component Cleanup
+| File | Changes |
+|------|---------|
+| `ChatPanel.jsx` + `.css` (NEW) | Removed all inline styles → CSS classes |
+| `ErrorBoundary.jsx` + `.css` (NEW) | Removed 30+ inline style objects → glassmorphic error card |
+| `TokenBudgetIndicator.css` | Token swap for all hardcoded colors |
+| `PillarDetailModal.css` | Token swap, glassmorphic modal, red hovers |
+| `TestPanel.jsx` | Inline style → `.pyodide-error-hint` class |
+| `ScoreBreakdown.jsx` | Inline style → `.score-breakdown-empty-text` class |
+
+### Bug Fixes (pre-existing)
+| File | Fix |
+|------|-----|
+| `ChatPanel.jsx` | Removed duplicate `title` attribute |
+| `api.jsx` | Added missing `export default api` |
+
+### Intentionally Unchanged
+- **CodeEditor.jsx** — Monaco `vs-dark` theme fits the design
+- **TaskSidebar.jsx** — Already uses GuidePage.css classes
+- **Chart components** (ScoreRadarChart, ScoreTrendChart, SessionRankingTable) — dynamic inline styles for data visualization (correct pattern)
+
+### Build Output
+```
+✓ 165 modules · 1.99s · CSS 70.84kB (gzip 11.68kB) · JS 407.75kB (gzip 125.97kB)
+```

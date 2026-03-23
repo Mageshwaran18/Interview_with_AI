@@ -1,0 +1,147 @@
+/* ══════════════════════════════════════════
+   StarfieldBackground — CSS-Only Star Animation
+   ══════════════════════════════════════════ */
+
+.starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Dark red tint gradient base */
+.starfield-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #1a0505 0%, #000000 40%, #000000 100%);
+}
+
+/* Star layers using box-shadow sprites */
+.starfield-stars {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.starfield-stars-layer1 {
+  box-shadow:
+    25px 50px #ffffff80,
+    100px 150px #ffffff60,
+    200px 80px #ffffff40,
+    350px 200px #ffffff80,
+    450px 100px #ffffff50,
+    550px 300px #ffffff70,
+    650px 50px #ffffff40,
+    750px 250px #ffffff60,
+    850px 180px #ffffff50,
+    950px 320px #ffffff70,
+    50px 400px #ffffff40,
+    180px 500px #ffffff60,
+    300px 420px #ffffff80,
+    420px 550px #ffffff50,
+    520px 480px #ffffff70,
+    620px 600px #ffffff40,
+    720px 520px #ffffff60,
+    820px 580px #ffffff80,
+    920px 650px #ffffff50,
+    1000px 450px #ffffff30,
+    80px 700px #ffffff60,
+    220px 750px #ffffff40,
+    360px 680px #ffffff50,
+    500px 800px #ffffff70,
+    640px 720px #ffffff80,
+    780px 850px #ffffff40,
+    900px 780px #ffffff60,
+    1050px 700px #ffffff30,
+    130px 900px #ffffff50,
+    270px 850px #ffffff70,
+    410px 950px #ffffff40,
+    560px 880px #ffffff60,
+    700px 970px #ffffff80,
+    840px 920px #ffffff40,
+    980px 850px #ffffff50,
+    1100px 900px #ffffff30,
+    60px 1050px #ffffff60,
+    200px 1000px #ffffff40,
+    340px 1100px #ffffff70,
+    480px 1050px #ffffff50,
+    615px 1150px #ffffff60,
+    760px 1080px #ffffff40,
+    900px 1200px #ffffff80,
+    1020px 1100px #ffffff50,
+    1150px 50px #ffffff40,
+    1200px 200px #ffffff60,
+    1300px 150px #ffffff50,
+    1400px 300px #ffffff70,
+    1150px 400px #ffffff40,
+    1250px 500px #ffffff60;
+  animation: noir-star-drift 120s linear infinite;
+}
+
+.starfield-stars-layer2 {
+  box-shadow:
+    75px 100px #ffffff50,
+    175px 200px #ffffff40,
+    275px 130px #ffffff60,
+    375px 280px #ffffff30,
+    475px 180px #ffffff50,
+    575px 350px #ffffff40,
+    675px 120px #ffffff60,
+    775px 300px #ffffff30,
+    875px 220px #ffffff50,
+    975px 380px #ffffff40,
+    125px 450px #ffffff30,
+    250px 550px #ffffff40,
+    370px 470px #ffffff50,
+    490px 600px #ffffff30,
+    610px 530px #ffffff40,
+    730px 650px #ffffff60,
+    850px 570px #ffffff30,
+    970px 700px #ffffff50,
+    1080px 600px #ffffff40,
+    140px 750px #ffffff50,
+    280px 800px #ffffff30,
+    420px 730px #ffffff40,
+    560px 850px #ffffff50,
+    700px 780px #ffffff30,
+    840px 900px #ffffff40,
+    980px 830px #ffffff60,
+    1100px 750px #ffffff30,
+    110px 950px #ffffff40,
+    250px 1000px #ffffff50,
+    390px 920px #ffffff30;
+  animation: noir-star-drift 180s linear infinite;
+  opacity: 0.6;
+}
+
+/* Central radial red glow orb */
+.starfield-orb {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(239, 35, 60, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+/* Faint grid overlay with radial mask */
+.starfield-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, black 20%, transparent 70%);
+}

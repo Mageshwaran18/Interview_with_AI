@@ -31,7 +31,7 @@ function ScoreBreakdown({ pillars = [] }) {
   if (!pillars || pillars.length === 0) {
     return (
       <div className="score-breakdown-empty">
-        <p style={{ color: "#8b949e", textAlign: "center", padding: "20px" }}>
+        <p className="score-breakdown-empty-text">
           No pillar data available
         </p>
       </div>

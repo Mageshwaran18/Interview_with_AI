@@ -1,0 +1,114 @@
+/* ══════════════════════════════════════════
+   ShinyButton — Spinning Conic-Gradient Pill Button
+   ══════════════════════════════════════════ */
+
+.shiny-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  outline: none;
+}
+
+/* ── Primary: Spinning red conic border ── */
+.shiny-btn-primary {
+  background:
+    linear-gradient(var(--bg-deepblack), var(--bg-deepblack)) padding-box,
+    conic-gradient(from var(--gradient-angle), var(--accent-red), #ff6b81, var(--accent-red), #ff475d, var(--accent-red)) border-box;
+  color: var(--text-primary);
+  animation: noir-border-spin 3s linear infinite;
+}
+
+.shiny-btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, var(--accent-red-soft), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.shiny-btn-primary:hover::before {
+  opacity: 1;
+}
+
+.shiny-btn-primary:hover {
+  box-shadow: 0 0 30px var(--accent-red-glow), 0 0 60px rgba(239, 35, 60, 0.2);
+  transform: translateY(-2px);
+}
+
+.shiny-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* ── Secondary: Static zinc border ── */
+.shiny-btn-secondary {
+  background: #18181b;
+  border-color: #3f3f46;
+  color: var(--text-secondary);
+}
+
+.shiny-btn-secondary:hover {
+  border-color: #52525b;
+  background: #27272a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.shiny-btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* ── Ghost: Transparent with glow ── */
+.shiny-btn-ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.shiny-btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.shiny-btn-ghost:active {
+  transform: translateY(0);
+}
+
+/* ── Disabled state ── */
+.shiny-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  animation: none;
+}
+
+.shiny-btn:disabled::before {
+  display: none;
+}
+
+/* ── Button content (sits above ::before) ── */
+.shiny-btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

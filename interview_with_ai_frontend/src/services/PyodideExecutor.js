@@ -120,58 +120,60 @@ class PyodideExecutor {
     }
 
     try {
-      // Capture stdout
-      let output = "";
-      
-      // Safely capture stdout - handle both Pyodide v0.23+ and v0.24+ APIs
-      let originalStdout = null;
-      const hasStdout = this.pyodide.sys && this.pyodide.sys.stdout;
-      
-      if (hasStdout) {
-        originalStdout = this.pyodide.sys.stdout;
-        this.pyodide.sys.stdout = {
-          write: (text) => {
-            output += text;
-            if (stdoutCallback) stdoutCallback(text);
-            return text.length;
-          },
-        };
-      }
+      // Redirect stdout in Python using StringIO (works in all Pyodide versions)
+      this.pyodide.runPython(`
+import sys as _sys
+from io import StringIO as _StringIO
+_old_stdout = _sys.stdout
+_captured_out = _StringIO()
+_sys.stdout = _captured_out
+`);
 
-      // Execute code using runPython
+      // Execute candidate code
       let result;
+      let success = true;
+      let error = null;
       try {
         result = this.pyodide.runPython(code);
       } catch (e) {
-        output += `[Python Error] ${e.message}\n`;
-        if (originalStdout) {
-          this.pyodide.sys.stdout = originalStdout;
-        }
-        return {
-          success: false,
-          output: output,
-          result: null,
-          error: e.message,
-        };
+        success = false;
+        error = e.message;
+        result = null;
       }
 
-      // Restore stdout
-      if (originalStdout && hasStdout) {
-        this.pyodide.sys.stdout = originalStdout;
+      // Retrieve captured output and restore stdout
+      let output = "";
+      try {
+        output = this.pyodide.runPython(`
+_sys.stdout = _old_stdout
+_captured_out.getvalue()
+`);
+        if (output === undefined || output === null) output = "";
+      } catch (_) {
+        // If restore fails, try basic restore
+        try { this.pyodide.runPython(`_sys.stdout = _old_stdout`); } catch (_e) { /* ignore */ }
+      }
+
+      if (error) {
+        output += `\n[Python Error] ${error}\n`;
+      }
+
+      if (stdoutCallback && output) {
+        stdoutCallback(output);
       }
 
       return {
-        success: true,
+        success,
         output: output,
         result: result,
-        error: null,
+        error: error,
       };
-    } catch (error) {
+    } catch (outerError) {
       return {
         success: false,
         output: "",
         result: null,
-        error: error.message,
+        error: outerError.message,
       };
     }
   }

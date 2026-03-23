@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import StarfieldBackground from "../components/StarfieldBackground";
+import GlassNav from "../components/GlassNav";
+import GlassCard from "../components/GlassCard";
+import ShinyButton from "../components/ShinyButton";
+import "./Dashboard.css";
 
 function Dashboard() {
   const [email, setEmail] = useState("");
@@ -33,86 +38,69 @@ function Dashboard() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0d1117",
-      color: "#e6edf3",
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      paddingTop: "60px",
-    }}>
-      <h2 style={{
-        fontSize: "28px",
-        fontWeight: 700,
-        background: "linear-gradient(135deg, #58a6ff, #a371f7)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        marginBottom: "8px",
-      }}>Dashboard</h2>
+    <div className="dashboard-page">
+      <StarfieldBackground />
 
-      <p style={{ color: "#8b949e", marginBottom: "32px" }}>
-        Logged in as: <strong style={{ color: "#e6edf3" }}>{email}</strong>
-      </p>
-
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
-        <button
-          onClick={() => navigate("/hiring-manager")}
-          style={{
-            background: "linear-gradient(135deg, #238636, #2ea043)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "10px",
-            padding: "14px 28px",
-            fontSize: "15px",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onMouseOver={(e) => e.target.style.transform = "translateY(-2px)"}
-          onMouseOut={(e) => e.target.style.transform = "translateY(0)"}
-        >
-          🎯 Start GUIDE Session
+      <GlassNav email={email} onLogout={handleLogout}>
+        <button className="glass-nav-link" onClick={() => navigate("/hiring-manager")}>
+          <span>Sessions</span>
         </button>
-
-        <button
-          onClick={() => navigate("/results")}
-          style={{
-            background: "linear-gradient(135deg, #58a6ff, #a371f7)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "10px",
-            padding: "14px 28px",
-            fontSize: "15px",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onMouseOver={(e) => e.target.style.transform = "translateY(-2px)"}
-          onMouseOut={(e) => e.target.style.transform = "translateY(0)"}
-        >
-          📊 View All Results
+        <button className="glass-nav-link" onClick={() => navigate("/results")}>
+          <span>Results</span>
         </button>
+      </GlassNav>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            background: "rgba(248, 81, 73, 0.1)",
-            color: "#f85149",
-            border: "1px solid rgba(248, 81, 73, 0.3)",
-            borderRadius: "10px",
-            padding: "14px 28px",
-            fontSize: "15px",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onMouseOver={(e) => e.target.style.transform = "translateY(-2px)"}
-          onMouseOut={(e) => e.target.style.transform = "translateY(0)"}
-        >
-          🚪 Logout
-        </button>
+      <div className="dashboard-content">
+        {/* Hero Section */}
+        <div className="dashboard-hero">
+          <div className="dashboard-badge">AI Collaboration Platform</div>
+          <h1 className="dashboard-title">Welcome to GUIDE</h1>
+          <p className="dashboard-subtitle">
+            Evaluate, score, and improve AI collaboration skills
+          </p>
+        </div>
+
+        {/* Bento Grid */}
+        <div className="dashboard-grid">
+          <GlassCard className="dashboard-card dashboard-card-primary">
+            <div className="dashboard-card-content">
+              <div className="dashboard-card-icon">🎯</div>
+              <h3 className="dashboard-card-title">Start GUIDE Session</h3>
+              <p className="dashboard-card-desc">
+                Create a new evaluation session for candidates to complete coding tasks with AI assistance.
+              </p>
+              <ShinyButton variant="primary" onClick={() => navigate("/hiring-manager")}>
+                Create Session →
+              </ShinyButton>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="dashboard-card">
+            <div className="dashboard-card-content">
+              <div className="dashboard-card-icon">📊</div>
+              <h3 className="dashboard-card-title">View Results</h3>
+              <p className="dashboard-card-desc">
+                Analyze candidate scores, pillar breakdowns, and performance trends across all sessions.
+              </p>
+              <ShinyButton variant="ghost" onClick={() => navigate("/results")}>
+                View Analytics →
+              </ShinyButton>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="dashboard-card">
+            <div className="dashboard-card-content">
+              <div className="dashboard-card-icon">👔</div>
+              <h3 className="dashboard-card-title">Manage Sessions</h3>
+              <p className="dashboard-card-desc">
+                Track active sessions, copy invite links, and manage the candidate evaluation pipeline.
+              </p>
+              <ShinyButton variant="secondary" onClick={() => navigate("/hiring-manager")}>
+                Open Dashboard →
+              </ShinyButton>
+            </div>
+          </GlassCard>
+        </div>
       </div>
     </div>
   );

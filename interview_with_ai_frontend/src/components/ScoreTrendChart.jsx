@@ -13,19 +13,6 @@ function ScoreTrendChart({ trends = [], width = 600, height = 200 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    // Handle window resize to update chart width
-    const handleResize = () => {
-      if (canvasRef.current) {
-        // Trigger re-render by updating canvas dimensions
-        redrawChart();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [width, height, trends]);
-
-  const redrawChart = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 

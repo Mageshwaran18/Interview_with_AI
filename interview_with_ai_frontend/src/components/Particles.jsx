@@ -226,6 +226,7 @@ const Particles = ({
                 // Still request next frame to resume when visible
                 animationFrameRef.current = requestAnimationFrame(update);
             }
+        };
 
         animationFrameRef.current = requestAnimationFrame(update);
 

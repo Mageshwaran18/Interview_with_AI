@@ -63,15 +63,7 @@ function TokenBudgetIndicator({ sessionId }) {
   // Show error state if fetch failed
   if (error) {
     return (
-      <div className="token-budget-indicator" style={{
-        background: '#c74444',
-        padding: '0.75rem',
-        borderRadius: '8px',
-        fontSize: '0.85rem',
-        color: '#fff',
-        border: '1px solid #a43333',
-        marginBottom: '1rem'
-      }}>
+      <div className="token-budget-indicator token-budget-indicator-error">
         ⚠️ {error}
       </div>
     );

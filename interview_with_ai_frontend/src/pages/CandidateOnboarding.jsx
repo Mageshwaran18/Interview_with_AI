@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "../services/api";
+import StarfieldBackground from "../components/StarfieldBackground";
 import "./CandidateOnboarding.css";
 
 /*
@@ -98,6 +99,7 @@ function CandidateOnboarding() {
   if (sessionError) {
     return (
       <div className="candidate-onboarding">
+        <StarfieldBackground />
         <div className="error-container">
           <div className="error-icon">❌</div>
           <h1>Session Not Found</h1>
@@ -116,6 +118,7 @@ function CandidateOnboarding() {
   if (!session) {
     return (
       <div className="candidate-onboarding">
+        <StarfieldBackground />
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading session...</p>
@@ -126,6 +129,7 @@ function CandidateOnboarding() {
 
   return (
     <div className="candidate-onboarding">
+      <StarfieldBackground />
       {/* Welcome Section */}
       <div className="onboarding-container">
         <div className="welcome-section">
