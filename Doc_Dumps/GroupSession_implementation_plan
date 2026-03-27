@@ -1,0 +1,175 @@
+# Group Session Service — Implementation Plan
+
+Hiring managers need to invite multiple candidates at once with a shared time window. This plan adds a bulk session creation flow (with CSV upload, dry-run mode, email invites, and window enforcement) as well as group-level filtering on the results dashboard.
+
+---
+
+## Backend
+
+### Schemas (`app/schemas/`)
+
+#### [MODIFY] [session_schema.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/schemas/session_schema.py)
+- Add optional fields to `SessionResponse`: `group_id`, `group_name`, `project_template`, `start_at`, `end_at`, `candidate_email`
+- Add `BulkCandidateRow` model (name, mailid)
+- Add `BulkSessionCreateRequest` (group_name, duration, template, start_at, end_at, candidates list, dry_run flag)
+- Add `PerCandidateResult` (name, email, status, session_id, invite_link, error)
+- Add `BulkSessionCreateResponse` (group_id, dry_run, results list, summary counts)
+- Add `SessionGroupSummary` (group_id, group_name, template, created_at, count, creator_email, window)
+
+---
+
+### Email Service (`app/services/`)
+
+#### [NEW] [email_service.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/services/email_service.py)
+- `send_invite_email(to_email, candidate_name, group_name, template, duration, start_at_ist, end_at_ist, invite_link) → bool`
+- Uses `smtplib` with env vars `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+- Template: plain-text email with name, group name, project template, duration, window in Asia/Kolkata, invite link, validity warning
+- On failure: logs and returns False (does not raise)
+
+---
+
+### Session Service (`app/services/session_service.py`)
+
+#### [MODIFY] [session_service.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/services/session_service.py)
+- Refactor `create_session` to accept optional `group_id`, `group_name`, `project_template`, `start_at`, `end_at`, `candidate_email` and persist them
+- Add `create_sessions_bulk(request: BulkSessionCreateRequest) → BulkSessionCreateResponse`:
+  - Validate: group_name, start_at < end_at, end_at > now, duration in [15, 180], template required, email format, no duplicate emails/names, ≤20 rows
+  - If dry_run=True: return per-row validation status only (no DB write, no email)
+  - If dry_run=False: loop candidates, create sessions, send emails, persist group summary to `session_groups` collection, return per-row status
+  - `group_id` format: `group_{timestamp}_{6hex}`
+- Add window enforcement in `get_session` and `start_session`: if `start_at` and `now < start_at` → raise `WindowNotStartedError`; if `end_at` and `now > end_at` → raise `WindowExpiredError` (caller turns these into 403)
+- Add `get_session_groups(limit=20) → List[SessionGroupSummary]`: queries `session_groups` collection sorted by `created_at` desc
+
+---
+
+### Dashboard Service (`app/services/dashboard_service.py`)
+
+#### [MODIFY] [dashboard_service.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/services/dashboard_service.py)
+- Add optional `group_id: str` parameter to `get_dashboard_stats`, `get_session_rankings`, `get_score_trends`
+- When `group_id` is supplied, fetch matching session_ids from `sessions` collection and add `{ "session_id": { "$in": session_ids } }` to the evaluations query
+- Include `group_id` and `group_name` in rankings rows (fetched from sessions collection alongside candidate_name)
+
+---
+
+### Routes
+
+#### [MODIFY] [session_routes.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/routes/session_routes.py)
+- `POST /api/sessions/bulk-create?dry_run=false` — calls `create_sessions_bulk`, returns `BulkSessionCreateResponse`
+- `GET /api/session-groups` — calls `get_session_groups`, returns list of `SessionGroupSummary`
+- Update existing `GET /api/sessions/{id}` to return 403 with detail `{"reason": "not_started", "start_at": "..."}` or `{"reason": "expired", "end_at": "..."}` on window errors
+
+#### [MODIFY] [dashboard_routes.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/routes/dashboard_routes.py)
+- Add optional `group_id: str` query param to `/stats`, `/rankings`, `/trends` — pass through to service
+
+---
+
+### Config (`app/config.py`)
+
+#### [MODIFY] [config.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/config.py)
+- Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FRONTEND_BASE_URL` settings (not required — graceful fallback if absent, emails skipped)
+
+### Env file (`.env`)
+- Add placeholder entries for SMTP and FRONTEND_BASE_URL (commented out, since SMTP is optional)
+
+---
+
+## Frontend
+
+### API Service (`interview_with_ai_frontend/src/services/api.jsx`)
+
+#### [MODIFY] [api.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx)
+- Add `bulkCreateSessions(payload, dryRun)` → `POST /api/sessions/bulk-create?dry_run=...`
+- Add `getSessionGroups()` → `GET /api/session-groups`
+- Update `getDashboardStats`, `getSessionRankings`, `getScoreTrends` to accept optional `groupId` param
+
+### App Routing (`interview_with_ai_frontend/src/App.jsx`)
+
+#### [MODIFY] [App.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/App.jsx)
+- Add route `/group-sessions` → `GroupSessionsPage`
+
+### Hiring Manager Dashboard (`interview_with_ai_frontend/src/pages/HiringManagerDashboard.jsx`)
+
+#### [MODIFY] [HiringManagerDashboard.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/HiringManagerDashboard.jsx)
+- Add "👥 Group Sessions" button in header actions → navigates to `/group-sessions`
+- Keep existing single-session "➕ Create New Session" button
+
+### Group Sessions Page (new)
+
+#### [NEW] [GroupSessionsPage.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/GroupSessionsPage.jsx)
+Fields:
+- Group name (text, required)
+- Duration (select: 30/45/60/90/120 min)
+- Project template (select)
+- Start datetime picker (default: now)
+- End datetime picker (default: now + 2h)
+- CSV upload: drag-and-drop or file picker; parses `Name,mailid` columns; shows parsed rows table with per-row validation (email format, duplicates, max 20)
+
+Flow:
+1. Fill fields + upload CSV → "✅ Validate" button (dry-run=true)
+2. Per-row validation table shown (✅ valid / ❌ error per row)
+3. If validation passes → "🚀 Confirm & Send" button enabled
+4. On submit: shows per-row result (session link or error); provides "📥 Download Links CSV" button
+5. Toast notifications for partial failures
+
+#### [NEW] [GroupSessionsPage.css](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/GroupSessionsPage.css)
+- Styled consistently with Red Noir design system (existing CSS variables from `index.css`)
+
+### Candidate Onboarding (`interview_with_ai_frontend/src/pages/CandidateOnboarding.jsx`)
+
+#### [MODIFY] [CandidateOnboarding.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/CandidateOnboarding.jsx)
+- Handle 403 response on session load:
+  - `reason: "not_started"` → show "⏳ Session Not Started Yet" screen with `start_at` in local time
+  - `reason: "expired"` → show "🔒 Session Expired" screen with `end_at` in local time
+- Show group name & window timestamps in the session info pills if present in session response
+
+### Results Dashboard (`interview_with_ai_frontend/src/pages/ResultsDashboard.jsx`)
+
+#### [MODIFY] [ResultsDashboard.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/ResultsDashboard.jsx)
+- Add group filter bar below the existing controls: dropdown populated from `GET /api/session-groups`
+- Show active filter chip with "✕ Clear" button
+- Wire filter to all three data fetches (stats, rankings, trends)
+- In rankings table: add "Group" column showing group name chip (null-safe for old sessions)
+
+---
+
+## Verification Plan
+
+### Existing Tests to Run
+The project has `app/tests/test_e2e_phase5.py` with pytest. Run after changes with:
+```
+cd d:\Project\Current\Final_Year_Project\Interview_with_AI
+python -m pytest app/tests/test_e2e_phase5.py -v
+```
+These tests verify baseline session lifecycle — must still pass after refactoring `create_session`.
+
+### New Backend Tests
+
+#### [NEW] [test_group_session.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/tests/test_group_session.py)
+Will cover:
+- `test_bulk_create_dry_run_valid` — all rows valid, dry_run=True, no DB writes occur
+- `test_bulk_create_dry_run_invalid_rows` — bad email formats, duplicates, > 20 rows produce per-row errors
+- `test_bulk_create_row_limit` — 21 rows rejected
+- `test_bulk_create_real_create` — dry_run=False creates sessions in DB, returns session_ids
+- `test_window_not_started` — `get_session` raises WindowNotStartedError when `now < start_at`
+- `test_window_expired` — `start_session` raises WindowExpiredError when `now > end_at`
+- `test_get_session_groups` — returns list after bulk create
+- `test_group_id_filter_rankings` — rankings filtered to sessions in a specific group
+
+Run with:
+```
+cd d:\Project\Current\Final_Year_Project\Interview_with_AI
+python -m pytest app/tests/test_group_session.py -v
+```
+
+### Manual Verification Steps
+1. Start backend: `uvicorn app.main:app --reload` in `d:\Project\Current\Final_Year_Project\Interview_with_AI`
+2. Start frontend: `npm run dev` in `d:\Project\Current\Final_Year_Project\Interview_with_AI\interview_with_ai_frontend`
+3. Open `http://localhost:5173/hiring-manager` — verify "👥 Group Sessions" button is visible
+4. Click "👥 Group Sessions" → `/group-sessions` page loads
+5. Fill group name, duration, template, start/end datetimes
+6. Upload a valid CSV (≤20 rows with Name, mailid columns)
+7. Click "✅ Validate" — per-row table shows all green
+8. Upload a CSV with a bad email and duplicate — validate shows errors on those rows
+9. After valid dry-run, click "🚀 Confirm & Send" — per-row links appear
+10. Copy a link, open in incognito; if within window → onboarding works; open outside window → friendly "Not started yet" or "Expired" shown
+11. On Results page — group filter dropdown shows the group just created; selecting it filters the rankings table

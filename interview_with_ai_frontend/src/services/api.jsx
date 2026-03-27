@@ -72,13 +72,16 @@ export const runTests = (sessionId, code) => {
 
 // ─── Phase 4: Dashboard API ───
 // Get aggregate statistics across all evaluated sessions
-export const getDashboardStats = () => {
-  return api.get("/api/dashboard/stats");
+export const getDashboardStats = (groupId = null) => {
+  const params = groupId ? `?group_id=${groupId}` : "";
+  return api.get(`/api/dashboard/stats${params}`);
 };
 
-// Get ranked sessions with sorting
-export const getSessionRankings = (limit = 50, sortBy = "composite_q_score", order = "desc") => {
-  return api.get(`/api/dashboard/rankings?limit=${limit}&sort_by=${sortBy}&order=${order}`);
+// Get ranked sessions with sorting and optional group filter
+export const getSessionRankings = (limit = 50, sortBy = "composite_q_score", order = "desc", groupId = null) => {
+  let url = `/api/dashboard/rankings?limit=${limit}&sort_by=${sortBy}&order=${order}`;
+  if (groupId) url += `&group_id=${groupId}`;
+  return api.get(url);
 };
 
 // Get detailed evaluation for a specific session
@@ -87,8 +90,21 @@ export const getSessionDetail = (sessionId) => {
 };
 
 // Get score trend data for chart visualization
-export const getScoreTrends = (limit = 20) => {
-  return api.get(`/api/dashboard/trends?limit=${limit}`);
+export const getScoreTrends = (limit = 20, groupId = null) => {
+  let url = `/api/dashboard/trends?limit=${limit}`;
+  if (groupId) url += `&group_id=${groupId}`;
+  return api.get(url);
+};
+
+// ─── Group Sessions API ───
+// Bulk create sessions (dry_run=true for validation, false for real)
+export const bulkCreateSessions = (payload, dryRun = false) => {
+  return api.post(`/api/sessions/bulk-create?dry_run=${dryRun}`, payload);
+};
+
+// List session groups for the results filter dropdown
+export const getSessionGroups = () => {
+  return api.get("/api/session-groups");
 };
 
 // Trigger evaluation pipeline for a session

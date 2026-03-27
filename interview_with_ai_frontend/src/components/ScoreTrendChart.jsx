@@ -1,28 +1,45 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 /*
   ScoreTrendChart — Canvas-based line chart showing Q score over time.
   
   Props:
     - trends: Array of { session_id, composite_q_score, created_at }
-    - width: chart width (default 600)
-    - height: chart height (default 200)
+    - width: chart width (default 600) — when omitted, fills container width
+    - height: chart height (default 260)
 */
 
-function ScoreTrendChart({ trends = [], width = 600, height = 200 }) {
+function ScoreTrendChart({ trends = [], width = 600, height = 260 }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [canvasSize, setCanvasSize] = useState({ w: width, h: height });
+
+  // Responsive sizing: fit container width, respect provided height
+  useEffect(() => {
+    const updateSize = () => {
+      const containerWidth = containerRef.current?.clientWidth;
+      const targetWidth = containerWidth && containerWidth > 0 ? containerWidth : width;
+      setCanvasSize({ w: targetWidth, h: height });
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, [width, height]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const { w, h } = canvasSize;
+
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
     ctx.scale(dpr, dpr);
 
     const padLeft = 44;
@@ -30,21 +47,21 @@ function ScoreTrendChart({ trends = [], width = 600, height = 200 }) {
     const padTop = 16;
     const padBottom = 32;
 
-    const chartW = width - padLeft - padRight;
-    const chartH = height - padTop - padBottom;
+    const chartW = w - padLeft - padRight;
+    const chartH = h - padTop - padBottom;
 
     // Clear
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, w, h);
 
     // Background
     ctx.fillStyle = "rgba(13, 17, 23, 0.5)";
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, w, h);
 
     if (!trends || trends.length === 0) {
       ctx.fillStyle = "#8b949e";
       ctx.font = "13px 'Segoe UI', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("No trend data available", width / 2, height / 2);
+      ctx.fillText("No trend data available", w / 2, h / 2);
       return;
     }
 
@@ -87,9 +104,9 @@ function ScoreTrendChart({ trends = [], width = 600, height = 200 }) {
       const ease = 1 - Math.pow(1 - progress, 3);
 
       // Redraw background
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "rgba(13, 17, 23, 0.5)";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, w, h);
 
       // Y-axis grid
       yLevels.forEach((level) => {
@@ -171,11 +188,11 @@ function ScoreTrendChart({ trends = [], width = 600, height = 200 }) {
     }
 
     requestAnimationFrame(draw);
-  }, [trends, width, height]);
+  }, [trends, canvasSize]);
 
   return (
-    <div className="trend-chart-container">
-      <canvas ref={canvasRef} style={{ display: "block", width: "100%" }} />
+    <div className="trend-chart-container" ref={containerRef}>
+      <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
     </div>
   );
 }

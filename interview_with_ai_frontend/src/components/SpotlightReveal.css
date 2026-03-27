@@ -1,0 +1,28 @@
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.95) 60%);
+  background-color: rgba(0, 0, 0, 0.96);
+  pointer-events: none;
+  z-index: 20;
+  will-change: clip-path, opacity;
+  animation: spotlight-reveal var(--spotlight-duration, 3200ms) cubic-bezier(0.23, 1, 0.32, 1) var(--spotlight-delay, 200ms) forwards;
+  clip-path: circle(0% at var(--spotlight-origin, 50% 30%));
+}
+
+@keyframes spotlight-reveal {
+  0% { clip-path: circle(0% at var(--spotlight-origin, 50% 30%)); opacity: 1; }
+  55% { opacity: 1; }
+  100% { clip-path: circle(var(--spotlight-max, 180%) at var(--spotlight-origin, 50% 30%)); opacity: 0; }
+}
+
+@supports not (clip-path: circle(50% at 50% 50%)) {
+  .spotlight-overlay {
+    animation: spotlight-fade var(--spotlight-duration, 3200ms) cubic-bezier(0.23, 1, 0.32, 1) var(--spotlight-delay, 200ms) forwards;
+    background: rgba(0, 0, 0, 0.9);
+  }
+  @keyframes spotlight-fade {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}

@@ -23,7 +23,7 @@ function ChatPanel({ sessionId, readOnly = false }) {
     {
       role: "ai",
       content:
-        "👋 Hello! I'm your AI assistant. Ask me anything about building the Library Management System. I can help with code, architecture, debugging, and more!",
+        "👋 I'm here strictly for coding support (architecture, debugging, tests, APIs). I will decline non-technical or unrelated requests.",
     },
   ];
 
@@ -65,7 +65,10 @@ function ChatPanel({ sessionId, readOnly = false }) {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage(sessionId, trimmed);
+      const guardrails =
+        "SYSTEM: You are a strict code assistant. ONLY respond to programming, debugging, tests, API usage, algorithms, or architecture. Decline anything unrelated to code with a brief refusal.";
+      const guardedPrompt = `${guardrails}\n\nUser prompt:\n${trimmed}`;
+      const response = await sendChatMessage(sessionId, guardedPrompt);
       const aiMessage = { role: "ai", content: response.data.response };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -105,6 +108,7 @@ function ChatPanel({ sessionId, readOnly = false }) {
         <div className="chat-header-left">
           <h2 className="chat-title">🤖 AI Assistant</h2>
           <span className="chat-model">Gemini 2.5 Flash</span>
+          <span className="chat-guardrail">Code help only</span>
         </div>
         <button
           onClick={handleClearChat}

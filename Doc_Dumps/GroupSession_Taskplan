@@ -1,0 +1,72 @@
+# Group Session Service — Task Checklist
+
+## Backend
+
+### Schemas
+- [ ] Extend [session_schema.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/schemas/session_schema.py): add `group_id`, `group_name`, `project_template`, `start_at`, `end_at`, `candidate_email` fields to [SessionResponse](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/schemas/session_schema.py#47-62); add `BulkCandidateRow`, `BulkSessionCreateRequest`, `BulkSessionCreateResponse`, `SessionGroupSummary` models
+
+### Models / DB
+- [ ] Ensure sessions collection persists window+group fields
+- [ ] Add `session_groups` collection (summary per bulk group)
+
+### Services
+- [ ] Refactor [session_service.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/services/session_service.py) [create_session](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/routes/session_routes.py#43-60) to accept candidate + window + template + group metadata
+- [ ] Add `create_sessions_bulk()`: loop candidates, generate `group_id` (group_\<ts\>_\<rand\>), return per-row status, cap at 20 rows
+- [ ] Add window enforcement in [get_session](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/services/session_service.py#104-130) / [start_session](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/routes/session_routes.py#78-93): 403 if `now < start_at` (not started) or `now > end_at` (expired)
+- [ ] Add `get_session_groups()` service: list recent groups with counts
+
+### Validation
+- [ ] Row limit ≤ 20, group_name required, `start_at < end_at`, `end_at` in future, duration in bounds, project template required, email format, no duplicate emails/names, dry-run mode (validate only, no DB/email)
+
+### Email Service
+- [ ] Create `email_service.py` using SMTP (env creds), template includes name, group name, template, duration, window (Asia/Kolkata), link, validity warning; record failure in response
+
+### Routes
+- [ ] Add `POST /api/sessions/bulk-create` (dry_run query param)
+- [ ] Add `GET /api/session-groups` endpoint
+- [ ] Update existing session responses to include group + window fields
+- [ ] Add `group_id` filter query param to `/api/dashboard/rankings`, `/api/dashboard/stats`, `/api/dashboard/trends`
+
+### Results Data
+- [ ] Ensure rankings/stats include `group_id`, `group_name`; detail endpoint returns group/window fields
+
+## Frontend — Creation UX
+
+### Routing & Nav
+- [ ] Add `/group-sessions` route in [App.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/App.jsx)
+- [ ] Update [HiringManagerDashboard.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/HiringManagerDashboard.jsx): rename "Create New Session" button area to "Group Sessions" and add navigation to new page
+
+### Group Sessions Page (`GroupSessionsPage.jsx` + `GroupSessionsPage.css`)
+- [ ] Fields: group name, duration select, project template select, start/end datetime pickers (default now/+2h), CSV upload (Name, mailid), row count guard ≤20, duplicate/email validation, summary of errors
+- [ ] Dry-run "Validate" button → hits `/api/sessions/bulk-create?dry_run=true`, shows per-row results
+- [ ] "Confirm & Send" button → enabled only after successful dry-run; calls bulk-create, shows per-row status
+- [ ] Post-submit: copy/download CSV of generated links, toast for partial failures
+
+### Candidate Gating
+- [ ] [CandidateOnboarding.jsx](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/pages/CandidateOnboarding.jsx): show "Not started yet" / "Expired" states from 403 response detail
+- [ ] Display start/end window in local time
+
+## Frontend — Results Filtering
+
+### Group Filter Bar on Results Dashboard
+- [ ] Add group filter dropdown/autocomplete from `GET /api/session-groups`
+- [ ] Active filter chip with clear/reset
+- [ ] Wire filter to [getDashboardStats](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx#73-78), [getSessionRankings](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx#79-83), [getScoreTrends](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/interview_with_ai_frontend/src/services/api.jsx#89-93)
+
+### Rankings Table
+- [ ] Display group name chip per row
+
+### Session Detail
+- [ ] Show group name and window dates
+
+## Validation & Limits
+- [ ] CSV parser: require Name + mailid columns, reject missing/extra, validate emails, dedupe, limit 20 rows, structured errors per row
+
+## Config / Ops
+- [ ] Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FRONTEND_BASE_URL` to [.env](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/.env) and [config.py](file:///d:/Project/Current/Final_Year_Project/Interview_with_AI/app/config.py)
+- [ ] Handle existing sessions with null group fields gracefully in UI
+
+## Testing & QA
+- [ ] Backend unit tests: `test_group_session.py` — bulk create validation, dry-run, window enforcement, email failure reporting
+- [ ] Frontend: CSV parser tests, dry-run flow state, not-started/expired UI
+- [ ] Manual checklist: create valid group ≤20 rows, confirm emails, dry-run errors, links blocked outside window, group filter

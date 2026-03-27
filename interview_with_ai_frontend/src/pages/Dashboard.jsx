@@ -5,6 +5,7 @@ import StarfieldBackground from "../components/StarfieldBackground";
 import GlassNav from "../components/GlassNav";
 import GlassCard from "../components/GlassCard";
 import ShinyButton from "../components/ShinyButton";
+import AnimatedHeadline from "../components/AnimatedHeadline";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -54,7 +55,7 @@ function Dashboard() {
         {/* Hero Section */}
         <div className="dashboard-hero">
           <div className="dashboard-badge">AI Collaboration Platform</div>
-          <h1 className="dashboard-title">Welcome to GUIDE</h1>
+          <AnimatedHeadline as="h1" className="dashboard-title" text="Welcome to GUIDE" />
           <p className="dashboard-subtitle">
             Evaluate, score, and improve AI collaboration skills
           </p>

@@ -46,3 +46,6 @@ ecdsa==0.19.1
 pyasn1==0.6.2
 rsa==4.9.1
 six==1.17.0
+
+# Frontend (npm-managed)
+# npm install three gsap

@@ -1,0 +1,101 @@
+.shape-pips {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-glow);
+  min-width: 220px;
+}
+
+.shape-pips.shape-sm {
+  padding: 10px 12px;
+  min-width: 180px;
+}
+
+.shape-pips.shape-lg {
+  padding: 18px 18px;
+  min-width: 260px;
+}
+
+.shape-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shape-pip {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--accent-red);
+  text-shadow: 0 0 12px var(--accent-red-glow);
+}
+
+.shape-pips.shape-lg .shape-pip { font-size: 22px; }
+.shape-pips.shape-sm .shape-pip { font-size: 16px; }
+
+/* Animation variants */
+.shape-anim-pulse .shape-pip {
+  animation: shape-pulse 1.05s ease-in-out infinite;
+}
+
+.shape-anim-wave .shape-pip {
+  animation: shape-wave 1.2s ease-in-out infinite;
+}
+
+.shape-anim-drift .shape-pip {
+  animation: shape-drift 1.4s ease-in-out infinite;
+}
+
+.shape-anim-orbit .shape-pip {
+  animation: shape-orbit 1.35s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.shape-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.shape-solidCircle,
+.shape-solidSquare {
+  color: var(--text-secondary);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.12);
+}
+
+.shape-pips:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 30px rgba(239, 35, 60, 0.12);
+}
+
+@keyframes shape-pulse {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
+  50%      { transform: translateY(-2px) scale(1.08); opacity: 1; }
+}
+
+@keyframes shape-wave {
+  0%   { transform: translateY(0); opacity: 0.85; }
+  25%  { transform: translateY(-4px); opacity: 1; }
+  50%  { transform: translateY(0); opacity: 0.95; }
+  75%  { transform: translateY(4px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.85; }
+}
+
+@keyframes shape-drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+  33%  { transform: translateY(-3px) translateX(2px) scale(1.04); opacity: 1; }
+  66%  { transform: translateY(3px) translateX(-2px) scale(0.98); opacity: 0.9; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+}
+
+@keyframes shape-orbit {
+  0%   { transform: rotate(0deg) translateX(10px) rotate(0deg); opacity: 0.9; }
+  50%  { opacity: 1; }
+  100% { transform: rotate(360deg) translateX(10px) rotate(-360deg); opacity: 0.9; }
+}

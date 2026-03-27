@@ -162,3 +162,31 @@ a:hover {
   0%   { left: -100%; }
   100% { left: 100%; }
 }
+
+/* ── Headline Slide (Power ease) ── */
+.noir-headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 8px;
+  align-items: baseline;
+}
+
+.noir-headline-word {
+  display: inline-flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.noir-headline-word span {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: noir-headline-rise 0.72s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes noir-headline-rise {
+  0% { transform: translateY(110%); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}

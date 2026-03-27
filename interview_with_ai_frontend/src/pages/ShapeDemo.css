@@ -1,0 +1,80 @@
+.shape-demo-page {
+  min-height: 100vh;
+  padding: 48px 24px 64px;
+  background: radial-gradient(circle at 15% 20%, rgba(239, 35, 60, 0.08), transparent 30%),
+    radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.04), transparent 28%),
+    radial-gradient(circle at 50% 80%, rgba(127, 90, 240, 0.06), transparent 30%),
+    var(--bg-dark);
+  color: var(--text-secondary);
+}
+
+.shape-demo-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.shape-demo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.shape-demo-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.shape-demo-note {
+  max-width: 520px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.shape-card {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow-glow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shape-card h4 {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.shape-card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.shape-row-inline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.shape-micro {
+  font-size: 18px;
+  color: var(--accent-red);
+}

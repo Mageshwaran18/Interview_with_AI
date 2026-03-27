@@ -5,6 +5,8 @@ import ScoreBreakdown from "../components/ScoreBreakdown";
 import SessionRankingTable from "../components/SessionRankingTable";
 import ScoreTrendChart from "../components/ScoreTrendChart";
 import PillarDetailModal from "../components/PillarDetailModal";
+import HyperLoader from "../components/HyperLoader";
+import BallpitBackground from "../components/BallpitBackground";
 import {
   getDashboardStats,
   getSessionRankings,
@@ -141,32 +143,48 @@ function ResultsDashboard() {
   // ─── THANK YOU PAGE (for candidates) ───
   if (sessionId === "thank-you") {
     return (
-      <div className="results-dashboard">
+      <div className="results-dashboard thankyou-mode">
         <header className="rd-header">
           <div className="rd-header-left">
             <h1 className="rd-title">✅ Submission Complete</h1>
+            <span className="rd-subtitle">The hiring team has been notified</span>
+          </div>
+          <div className="rd-header-right">
+            <span className="rd-session-badge">Awaiting review</span>
           </div>
         </header>
 
-        <main className="rd-content" style={{ paddingTop: "60px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "70vh" }}>
-          <div style={{
-            maxWidth: "500px",
-            padding: "40px",
-            backgroundColor: "#1a2332",
-            borderRadius: "12px",
-            textAlign: "center",
-            border: "2px solid #3fb950",
-          }}>
-            <div style={{ fontSize: "64px", marginBottom: "20px" }}>🙏</div>
-            <h2 style={{ color: "#3fb950", marginBottom: "16px", fontSize: "24px" }}>
-              Thanks for the Attempt!
-            </h2>
-            <p style={{ color: "#888", marginBottom: "16px", fontSize: "16px", lineHeight: "1.6" }}>
-              We've received your submission. The hiring team will review your solution and further steps will be communicated with you shortly.
-            </p>
-            <p style={{ color: "#666", fontSize: "14px" }}>
-              Thank you for your interest and effort. Good luck! 🚀
-            </p>
+        <main className="rd-content thankyou-content">
+          <div className="thankyou-stage">
+            <BallpitBackground
+              count={240}
+              colors={["#ff1744", "#ef233c", "#ff6b6b", "#1a0a0f", "#c71c3a"]}
+              gravity={0.55}
+              friction={0.9965}
+              wallBounce={0.92}
+              initialKick={0.48}
+              minSize={0.65}
+              maxSize={1.45}
+              lightIntensity={220}
+              ambientColor="#0f0509"
+              ambientIntensity={0.95}
+              followCursor
+              className="thankyou-ballpit"
+            />
+            <div className="thankyou-gradient" />
+            <div className="thankyou-card">
+              <div className="thankyou-icon" aria-hidden>
+                🙏
+              </div>
+              <p className="thankyou-kicker">Submission received</p>
+              <h2 className="thankyou-heading">Thanks for the Attempt!</h2>
+              <p className="thankyou-body">
+                We've received your submission. The hiring team will review your solution and further steps will be communicated with you shortly.
+              </p>
+              <p className="thankyou-footnote">
+                Thank you for your interest and effort. Good luck! 🚀
+              </p>
+            </div>
           </div>
         </main>
       </div>
@@ -194,9 +212,8 @@ function ResultsDashboard() {
           </div>
 
           {loading && (
-            <div className="rd-loading" style={{ marginTop: "60px" }}>
-              <div className="rd-loading-spinner" />
-              <p>Loading session results...</p>
+            <div style={{ marginTop: "60px" }}>
+              <HyperLoader label="Loading session results" subtitle="Fetching the latest scores" />
             </div>
           )}
         </div>
@@ -215,9 +232,8 @@ function ResultsDashboard() {
             </div>
           </header>
 
-          <div className="rd-loading" style={{ marginTop: "60px" }}>
-            <div className="rd-loading-spinner" />
-            <p>Loading session results...</p>
+          <div style={{ marginTop: "60px" }}>
+            <HyperLoader label="Loading session results" subtitle="Fetching the latest scores" />
           </div>
         </div>
       );
@@ -529,7 +545,7 @@ function ResultsDashboard() {
           {trends.length > 0 && (
             <section className="rd-trend-section">
               <h2 className="rd-section-title">Score Trends</h2>
-              <ScoreTrendChart trends={trends} width={Math.min(window.innerWidth - 80, 900)} height={220} />
+              <ScoreTrendChart trends={trends} height={320} />
             </section>
           )}
 

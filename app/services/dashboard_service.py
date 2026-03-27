@@ -2,13 +2,23 @@
 Phase 4: Dashboard Service — Aggregation, ranking, and statistics logic.
 
 Reads from evaluations_collection (Phase 3) to compute dashboard data.
+Extended with optional group_id filtering for Group Session feature.
 """
 
 import logging
 from typing import Optional, List, Dict, Any
-from app.database import evaluations_collection
+from app.database import evaluations_collection, sessions_collection
 
 logger = logging.getLogger(__name__)
+
+
+def _get_session_ids_for_group(group_id: str) -> Optional[List[str]]:
+    """Return list of session_ids belonging to a group, or None if group_id not supplied."""
+    docs = sessions_collection.find(
+        {"group_id": group_id},
+        {"session_id": 1},
+    )
+    return [d["session_id"] for d in docs]
 
 
 def _extract_pillar_scores(eval_doc: dict) -> Dict[str, float]:
@@ -32,15 +42,17 @@ def _safe_iso(dt) -> Optional[str]:
         return str(dt)
 
 
-async def get_dashboard_stats() -> Dict[str, Any]:
+async def get_dashboard_stats(group_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Compute aggregate statistics across all evaluations.
-    
-    Returns dict with: total_sessions, average/max/min Q scores,
-    pillar averages, and score distribution buckets.
+    If group_id is provided, restricts to sessions in that group.
     """
     try:
-        all_evals = list(evaluations_collection.find().sort("created_at", -1))
+        query: Dict[str, Any] = {}
+        if group_id:
+            sids = _get_session_ids_for_group(group_id)
+            query["session_id"] = {"$in": sids}
+        all_evals = list(evaluations_collection.find(query).sort("created_at", -1))
         
         if not all_evals:
             return {
@@ -126,15 +138,12 @@ async def get_dashboard_stats() -> Dict[str, Any]:
 
 
 async def get_session_rankings(
-    limit: int = 50, sort_by: str = "composite_q_score", order: str = "desc"
+    limit: int = 50, sort_by: str = "composite_q_score", order: str = "desc",
+    group_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Get ranked sessions sorted by the specified field.
-    
-    Args:
-        limit: Max results
-        sort_by: Field to sort by (composite_q_score or pillar)
-        order: 'asc' or 'desc'
+    If group_id provided, restricts to that group.
     """
     try:
         sort_direction = -1 if order == "desc" else 1
@@ -149,22 +158,46 @@ async def get_session_rankings(
             "E": "pillar_e.score",
         }
         mongo_sort_field = sort_field_map.get(sort_by, "composite_q_score")
-        
+
+        eval_query: Dict[str, Any] = {}
+        if group_id:
+            sids = _get_session_ids_for_group(group_id)
+            eval_query["session_id"] = {"$in": sids}
+
         results = list(
-            evaluations_collection.find()
+            evaluations_collection.find(eval_query)
             .sort(mongo_sort_field, sort_direction)
             .limit(limit)
         )
+
+        # Fetch candidate names for the corresponding session IDs in one query
+        session_ids = [ev.get("session_id", "") for ev in results if ev.get("session_id")]
+        candidate_lookup: Dict[str, Any] = {}
+        group_lookup: Dict[str, Any] = {}
+        if session_ids:
+            session_docs = sessions_collection.find(
+                {"session_id": {"$in": session_ids}},
+                {"session_id": 1, "candidate_name": 1, "group_id": 1, "group_name": 1},
+            )
+            for doc in session_docs:
+                sid = doc.get("session_id")
+                candidate_lookup[sid] = doc.get("candidate_name")
+                group_lookup[sid] = {"group_id": doc.get("group_id"), "group_name": doc.get("group_name")}
         
         rankings = []
         for idx, ev in enumerate(results):
+            session_id = ev.get("session_id", "")
+            grp = group_lookup.get(session_id, {})
             rankings.append({
                 "rank": idx + 1,
-                "session_id": ev.get("session_id", ""),
+                "session_id": session_id,
+                "candidate_name": candidate_lookup.get(session_id),
                 "composite_q_score": round(ev.get("composite_q_score", 0.0), 2),
                 "pillar_scores": _extract_pillar_scores(ev),
                 "created_at": _safe_iso(ev.get("created_at")),
                 "duration_minutes": round(ev.get("session_duration_minutes", 0.0), 2),
+                "group_id": grp.get("group_id"),
+                "group_name": grp.get("group_name"),
             })
         
         return rankings
@@ -230,15 +263,20 @@ async def get_session_detail(session_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-async def get_score_trends(limit: int = 20) -> List[Dict[str, Any]]:
+async def get_score_trends(limit: int = 20, group_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Get chronological score data for trend visualization.
-    Returns oldest-first for proper chart rendering.
+    Optionally filter by group_id.
     """
     try:
+        trend_query: Dict[str, Any] = {}
+        if group_id:
+            sids = _get_session_ids_for_group(group_id)
+            trend_query["session_id"] = {"$in": sids}
+
         results = list(
-            evaluations_collection.find()
-            .sort("created_at", 1)  # Oldest first for trend
+            evaluations_collection.find(trend_query)
+            .sort("created_at", 1)
             .limit(limit)
         )
         

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import StarfieldBackground from "../components/StarfieldBackground";
 import GlassCard from "../components/GlassCard";
 import ShinyButton from "../components/ShinyButton";
+import AnimatedHeadline from "../components/AnimatedHeadline";
 import "./Signin.css";
 
 function Signin() {
@@ -44,7 +45,7 @@ function Signin() {
             </div>
 
             {/* Heading */}
-            <h2 className="signin-heading">Welcome Back</h2>
+            <AnimatedHeadline as="h2" className="signin-heading" text="Welcome Back" />
             <p className="signin-subtext">Sign in to continue your journey</p>
 
             {/* Error Banner */}
@@ -56,7 +57,11 @@ function Signin() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSignin} className="signin-form">
+            <form
+              onSubmit={handleSignin}
+              className="signin-form"
+              autoComplete="off"
+            >
               <div className="signin-field">
                 <label htmlFor="signin-email">Email</label>
                 <input
@@ -67,7 +72,10 @@ function Signin() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
                   className="signin-input"
-                  autoComplete="email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                 />
               </div>
 
@@ -81,7 +89,9 @@ function Signin() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   className="signin-input"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
 

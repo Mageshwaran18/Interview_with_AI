@@ -51,10 +51,17 @@ class SessionResponse(BaseModel):
     candidate_name: Optional[str]
     time_limit_minutes: int
     created_at: Optional[datetime] = None
-    started_at: Optional[datetime]
-    submitted_at: Optional[datetime]
+    started_at: Optional[datetime] = None
+    submitted_at: Optional[datetime] = None
     invite_link: str  # Full URL candidate can click
-    
+    # Group session fields (None for individually-created sessions)
+    group_id: Optional[str] = None
+    group_name: Optional[str] = None
+    project_template: Optional[str] = None
+    start_at: Optional[datetime] = None   # Window open (Asia/Kolkata stored as ISO)
+    end_at: Optional[datetime] = None     # Window close
+    candidate_email: Optional[str] = None
+
     class Config:
         json_encoders = {
             SessionState: lambda v: v.value
@@ -84,3 +91,54 @@ class CachedJudgeEvaluation(BaseModel):
     reasoning: str
     created_at: Optional[datetime] = None
     call_count: int = 1  # How many times this has been retrieved from cache
+
+
+# ─── Group / Bulk Session Schemas ───
+
+class BulkCandidateRow(BaseModel):
+    """One row in the CSV: a single candidate to invite"""
+    name: str = Field(..., min_length=2, max_length=100)
+    Gmail: str  # validated as email in service layer
+
+
+class BulkSessionCreateRequest(BaseModel):
+    """Request body for POST /api/sessions/bulk-create"""
+    group_name: str = Field(..., min_length=2, max_length=120)
+    time_limit_minutes: int = Field(default=60, ge=15, le=180)
+    project_template: str = Field(..., min_length=2, max_length=120)
+    start_at: datetime          # ISO string, assumed Asia/Kolkata
+    end_at: datetime            # Must be > start_at and in the future
+    candidates: List[BulkCandidateRow]
+    dry_run: bool = False       # True = validate only, no DB/email
+
+
+class PerCandidateResult(BaseModel):
+    """Result for a single candidate in a bulk-create response"""
+    name: str
+    email: str
+    status: str          # 'created', 'email_failed', 'invalid', 'duplicate'
+    session_id: Optional[str] = None
+    invite_link: Optional[str] = None
+    error: Optional[str] = None
+
+
+class BulkSessionCreateResponse(BaseModel):
+    """Response for POST /api/sessions/bulk-create"""
+    group_id: Optional[str] = None   # None on dry_run
+    dry_run: bool
+    results: List[PerCandidateResult]
+    total: int
+    valid: int
+    failed: int
+
+
+class SessionGroupSummary(BaseModel):
+    """Summary of a bulk-created group (from session_groups collection)"""
+    group_id: str
+    group_name: str
+    project_template: str
+    created_at: datetime
+    session_count: int
+    creator_email: Optional[str] = None
+    start_at: Optional[datetime] = None
+    end_at: Optional[datetime] = None

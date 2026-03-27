@@ -6,6 +6,8 @@ import GuidePage from "./pages/GuidePage";
 import ResultsDashboard from "./pages/ResultsDashboard";
 import HiringManagerDashboard from "./pages/HiringManagerDashboard";
 import CandidateOnboarding from "./pages/CandidateOnboarding";
+import ShapeDemo from "./pages/ShapeDemo";
+import GroupSessionsPage from "./pages/GroupSessionsPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
@@ -72,6 +74,22 @@ function App() {
         element={
           <ErrorBoundary>
             <ResultsDashboard />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/shapes-demo"
+        element={
+          <ErrorBoundary>
+            <ShapeDemo />
+          </ErrorBoundary>
+        }
+      />
+      <Route
+        path="/group-sessions"
+        element={
+          <ErrorBoundary>
+            <GroupSessionsPage />
           </ErrorBoundary>
         }
       />

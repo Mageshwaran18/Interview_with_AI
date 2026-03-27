@@ -29,7 +29,7 @@ function formatDate(isoString) {
 
 const SORT_COLUMNS = [
   { key: "rank", label: "#" },
-  { key: "session_id", label: "Session" },
+  { key: "session_id", label: "Candidate" },
   { key: "composite_q_score", label: "Q Score" },
   { key: "G", label: "G" },
   { key: "U", label: "U" },
@@ -94,7 +94,8 @@ function SessionRankingTable({
                 </span>
               </td>
               <td className="ranking-session">
-                <span className="session-id-text">{(row.session_id || "").slice(0, 24)}...</span>
+                <div className="session-name">{row.candidate_name || "Unknown candidate"}</div>
+                <div className="session-id-text">{(row.session_id || "").slice(0, 24)}...</div>
               </td>
               <td className="ranking-q-score">
                 <div className="q-score-cell">

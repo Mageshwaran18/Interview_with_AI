@@ -10,6 +10,15 @@
   flex: 1;
 }
 
+.chat-guardrail {
+  font-size: 11px;
+  color: #d4f1ff;
+  padding: 5px 10px;
+  border: 1px solid rgba(82, 190, 255, 0.3);
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, rgba(82, 190, 255, 0.18), rgba(82, 190, 255, 0.08));
+}
+
 /* Clear Chat Button */
 .chat-clear-btn {
   background: none;

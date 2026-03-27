@@ -10,6 +10,13 @@ class Settings:
     ALGORITHM = os.getenv("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    # Email / SMTP (optional — email is skipped gracefully if absent)
+    SMTP_HOST = os.getenv("SMTP_HOST", "")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER = os.getenv("SMTP_USER", "")
+    SMTP_PASS = os.getenv("SMTP_PASS", "")
+    # Frontend base URL for generating invite links
+    FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 
     def __init__(self):
         # Validate critical environment variables

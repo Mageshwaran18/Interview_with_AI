@@ -1,0 +1,398 @@
+/* ════════════════════════════════════════════════════════════
+   GroupSessionsPage — Red Noir Design System
+   ════════════════════════════════════════════════════════════ */
+
+.group-sessions-page {
+  min-height: 100vh;
+  background: var(--color-bg, #0a0a0f);
+  color: var(--color-text, #e8e8f0);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  position: relative;
+}
+
+/* ─── Container ─────────────────────────────────────────────── */
+.gs-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 100px 24px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.gs-header {
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.gs-header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff2d55, #ff6b35);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.gs-subtitle {
+  color: var(--color-text-muted, rgba(232,232,240,0.6));
+  font-size: 1rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ─── Form Layout ────────────────────────────────────────────── */
+.gs-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.gs-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,45,85,0.18);
+  border-radius: 16px;
+  padding: 28px 32px;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s;
+}
+
+.gs-card:hover {
+  border-color: rgba(255,45,85,0.35);
+}
+
+.gs-card h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ff2d55;
+  margin: 0 0 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Form Fields ────────────────────────────────────────────── */
+.gs-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.gs-field-group label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(232,232,240,0.75);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gs-required {
+  color: #ff2d55;
+  margin-left: 2px;
+}
+
+.gs-input,
+.gs-select {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #e8e8f0;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.gs-input:focus,
+.gs-select:focus {
+  border-color: rgba(255,45,85,0.6);
+  background: rgba(0,0,0,0.45);
+}
+
+.gs-input::placeholder {
+  color: rgba(232,232,240,0.3);
+}
+
+.gs-select option {
+  background: #1a1a22;
+}
+
+.gs-field-group small {
+  font-size: 0.77rem;
+  color: rgba(232,232,240,0.4);
+}
+
+.gs-row-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .gs-row-fields { grid-template-columns: 1fr; }
+}
+
+.gs-hint {
+  font-size: 0.82rem;
+  color: rgba(232,232,240,0.5);
+  margin: -10px 0 16px;
+}
+
+.gs-hint code {
+  background: rgba(255,45,85,0.12);
+  color: #ff6b8a;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+/* ─── Drop Zone ──────────────────────────────────────────────── */
+.gs-drop-zone {
+  border: 2px dashed rgba(255,45,85,0.3);
+  border-radius: 12px;
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255,45,85,0.04);
+  margin-bottom: 16px;
+}
+
+.gs-drop-zone:hover,
+.gs-drop-zone-active {
+  border-color: rgba(255,45,85,0.7);
+  background: rgba(255,45,85,0.08);
+}
+
+.gs-drop-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.gs-drop-prompt,
+.gs-drop-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: rgba(232,232,240,0.6);
+}
+
+.gs-drop-hint {
+  font-size: 0.78rem;
+  color: rgba(255,45,85,0.7);
+}
+
+.gs-error-msg {
+  background: rgba(255,45,85,0.12);
+  border: 1px solid rgba(255,45,85,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #ff6b8a;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+/* ─── Table ──────────────────────────────────────────────────── */
+.gs-table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.gs-table-wrapper.gs-preview {
+  margin-top: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.gs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.gs-table th {
+  background: rgba(255,45,85,0.12);
+  color: #ff2d55;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gs-table td {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  color: rgba(232,232,240,0.85);
+  vertical-align: middle;
+}
+
+.gs-table tr.row-ok td { background: rgba(52,211,153,0.04); }
+.gs-table tr.row-err td { background: rgba(255,45,85,0.06); }
+.gs-table tr.row-warn td { background: rgba(255,165,0,0.06); }
+
+.gs-ok { color: #34d399; font-weight: 600; }
+.gs-err { color: #ff6b8a; font-weight: 600; }
+.gs-muted { color: rgba(232,232,240,0.35); }
+
+.gs-link {
+  color: #60a5fa;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.gs-link:hover { color: #93c5fd; }
+
+/* ─── Status badges ──────────────────────────────────────────── */
+.gs-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.gs-status-created { background: rgba(52,211,153,0.15); color: #34d399; }
+.gs-status-email_failed { background: rgba(255,165,0,0.15); color: #fbbf24; }
+.gs-status-invalid { background: rgba(255,45,85,0.15); color: #ff6b8a; }
+
+/* ─── Validation Card ────────────────────────────────────────── */
+.gs-validation-card { border-color: rgba(255,255,255,0.12); }
+
+.gs-validation-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.gs-validation-header h2 { margin: 0; }
+
+.gs-vbadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gs-vbadge-ok { background: rgba(52,211,153,0.15); color: #34d399; }
+.gs-vbadge-err { background: rgba(255,45,85,0.15); color: #ff6b8a; }
+
+/* ─── Actions ────────────────────────────────────────────────── */
+.gs-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+  padding-bottom: 16px;
+}
+
+.gs-btn {
+  padding: 12px 26px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+}
+
+.gs-btn-secondary {
+  background: rgba(255,255,255,0.07);
+  color: #e8e8f0;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.gs-btn-secondary:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+}
+
+.gs-btn-primary {
+  background: linear-gradient(135deg, #ff2d55, #ff6b35);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(255,45,85,0.35);
+}
+
+.gs-btn-primary:hover:not(.gs-btn-disabled):not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(255,45,85,0.5);
+}
+
+.gs-btn:disabled,
+.gs-btn-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ─── Result Panel ───────────────────────────────────────────── */
+.gs-result-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.gs-result-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.gs-result-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #34d399;
+  margin: 0;
+}
+
+.gs-result-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gs-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.07);
+  color: rgba(232,232,240,0.8);
+}
+
+.gs-chip-green { background: rgba(52,211,153,0.12); color: #34d399; }
+.gs-chip-red   { background: rgba(255,45,85,0.12);  color: #ff6b8a; }
+
+.gs-download-btn {
+  margin-left: auto;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3a3a5c, #4a4a7c);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: #e8e8f0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gs-download-btn:hover {
+  background: linear-gradient(135deg, #4a4a6c, #5a5a8c);
+  transform: translateY(-1px);
+}

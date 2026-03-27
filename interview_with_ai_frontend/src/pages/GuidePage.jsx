@@ -5,6 +5,7 @@ import TaskSidebar from "../components/TaskSidebar";
 import CodeEditor from "../components/CodeEditor";
 import ChatPanel from "../components/ChatPanel";
 import TestPanel from "../components/TestPanel";
+import ShapePips from "../components/ShapePips";
 import { sendEvent, triggerEvaluation } from "../services/api";
 import api from "../services/api";
 import "./GuidePage.css";
@@ -221,24 +222,11 @@ function GuidePage() {
           background: "#0d1117",
           color: "#e6edf3",
           fontSize: "18px",
-          gap: "20px",
+          gap: "12px",
         }}>
-          <div style={{
-            width: "50px",
-            height: "50px",
-            border: "4px solid #30363d",
-            borderTop: "4px solid #58a6ff",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }}></div>
-          <p>⏳ Loading session...</p>
+          <ShapePips label="Loading session" animation="orbit" />
           <p style={{ fontSize: "12px", color: "#8b949e" }}>Session ID: {sessionId}</p>
         </div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     );
   }

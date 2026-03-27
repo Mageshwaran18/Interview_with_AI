@@ -40,6 +40,7 @@ class RankingEntry(BaseModel):
     """A single row in the session ranking table."""
     rank: int
     session_id: str
+    candidate_name: Optional[str] = None
     composite_q_score: float = 0.0
     pillar_scores: Dict[str, float] = Field(default_factory=dict)
     created_at: Optional[str] = None

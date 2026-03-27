@@ -9,6 +9,7 @@ Endpoints:
 """
 
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from app.services.dashboard_service import (
     get_dashboard_stats,
@@ -23,14 +24,15 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
 @router.get("/stats")
-async def dashboard_stats():
+async def dashboard_stats(
+    group_id: Optional[str] = Query(None, description="Filter by group_id for bulk sessions"),
+):
     """
     Get aggregate statistics across all evaluated sessions.
-    Returns total sessions, average/max/min Q scores, pillar averages,
-    and score distribution histogram.
+    Optionally filter by group_id.
     """
     try:
-        stats = await get_dashboard_stats()
+        stats = await get_dashboard_stats(group_id=group_id)
         return {"success": True, "stats": stats}
     except Exception as e:
         logger.error(f"Dashboard stats failed: {e}", exc_info=True)
@@ -42,13 +44,14 @@ async def dashboard_rankings(
     limit: int = Query(50, ge=1, le=200),
     sort_by: str = Query("composite_q_score", description="Sort field: composite_q_score, G, U, I, D, E"),
     order: str = Query("desc", description="Sort order: asc or desc"),
+    group_id: Optional[str] = Query(None, description="Filter by group_id"),
 ):
     """
     Get ranked sessions sorted by the specified field.
-    Supports sorting by composite Q score or individual pillar scores.
+    Optionally filter by group_id.
     """
     try:
-        rankings = await get_session_rankings(limit=limit, sort_by=sort_by, order=order)
+        rankings = await get_session_rankings(limit=limit, sort_by=sort_by, order=order, group_id=group_id)
         return {"success": True, "count": len(rankings), "rankings": rankings}
     except Exception as e:
         logger.error(f"Dashboard rankings failed: {e}", exc_info=True)
@@ -103,13 +106,15 @@ async def dashboard_session_detail(session_id: str):
 @router.get("/trends")
 async def dashboard_trends(
     limit: int = Query(20, ge=1, le=100),
+    group_id: Optional[str] = Query(None, description="Filter by group_id"),
 ):
     """
     Get chronological score data for trend visualization.
     Returns oldest-first for proper chart rendering.
+    Optionally filter by group_id.
     """
     try:
-        trends = await get_score_trends(limit=limit)
+        trends = await get_score_trends(limit=limit, group_id=group_id)
         return {"success": True, "count": len(trends), "trends": trends}
     except Exception as e:
         logger.error(f"Dashboard trends failed: {e}", exc_info=True)

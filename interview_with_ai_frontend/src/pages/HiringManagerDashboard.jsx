@@ -5,6 +5,7 @@ import api from "../services/api";
 import StarfieldBackground from "../components/StarfieldBackground";
 import GlassNav from "../components/GlassNav";
 import Toast from "../components/Toast";
+import HyperLoader from "../components/HyperLoader";
 import "./HiringManagerDashboard.css";
 
 /*
@@ -42,10 +43,10 @@ function HiringManagerDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
   const [creatingSession, setCreatingSession] = useState(false);
-  const [viewMode, setViewMode] = useState("table"); // "table" or "card"
   const [filterState, setFilterState] = useState("ALL"); // Filter by state
   const [sortBy, setSortBy] = useState("created_asc"); // Sort option
   const [notification, setNotification] = useState(null); // Notification system
+  const [projectTemplate, setProjectTemplate] = useState("Library Management System");
 
   // Save sessions to localStorage whenever they change
   useEffect(() => {
@@ -59,8 +60,7 @@ function HiringManagerDashboard() {
   // Fetch all sessions on component mount
   useEffect(() => {
     fetchSessions();
-    // Poll for updates every 5 seconds
-    const interval = setInterval(fetchSessions, 30000); // Reduced from 5s to 30s to reduce server load
+    const interval = setInterval(fetchSessions, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -191,16 +191,11 @@ function HiringManagerDashboard() {
     }
   });
 
-  if (loading && sessions.length === 0) {
-    return (
-      <div className="hiring-manager-dashboard">
-        <div className="loading">Loading sessions...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="hiring-manager-dashboard">
+      {loading && (
+        <HyperLoader label="Loading sessions" subtitle="Syncing dashboard data" />
+      )}
       <StarfieldBackground />
 
       <GlassNav>
@@ -239,6 +234,12 @@ function HiringManagerDashboard() {
             onClick={() => navigate("/results")}
           >
             📊 Overall Results
+          </button>
+          <button
+            className="create-session-btn create-session-btn-secondary"
+            onClick={() => navigate("/group-sessions")}
+          >
+            👥 Group Sessions
           </button>
           <button
             className="create-session-btn"
@@ -283,6 +284,19 @@ function HiringManagerDashboard() {
                 <small>Choose how long the candidate has to complete the task</small>
               </div>
 
+              <div className="form-group">
+                <label htmlFor="project-template">Project Template</label>
+                <select
+                  id="project-template"
+                  value={projectTemplate}
+                  onChange={(e) => setProjectTemplate(e.target.value)}
+                >
+                  <option value="Library Management System">Library Management System</option>
+                  <option value="Hotel Booking System ( beta )">Hotel Booking System ( beta )</option>
+                </select>
+                <small>Select the starter project context for the session</small>
+              </div>
+
               <div className="modal-footer">
                 <button
                   type="button"
@@ -309,22 +323,6 @@ function HiringManagerDashboard() {
       <div className="sessions-container">
         {/* View Mode & Filter Controls */}
         <div className="controls-bar">
-          {/* View Mode Toggle */}
-          <div className="view-toggle-group">
-            <button
-              onClick={() => setViewMode("table")}
-              className={`view-toggle-btn ${viewMode === "table" ? "view-toggle-active" : ""}`}
-            >
-              📊 Table View
-            </button>
-            <button
-              onClick={() => setViewMode("card")}
-              className={`view-toggle-btn ${viewMode === "card" ? "view-toggle-active" : ""}`}
-            >
-              🃏 Card View
-            </button>
-          </div>
-
           {/* Filter by Status */}
           <select
             id="filter-status"
@@ -368,71 +366,7 @@ function HiringManagerDashboard() {
           <div className="empty-state">
             <p>🔍 No sessions match the selected filter.</p>
           </div>
-        ) : viewMode === "table" ? (
-          /* TABLE VIEW */
-          <div className="table-wrapper">
-            <table className="sessions-table">
-              <thead>
-                <tr>
-                  <th>Candidate</th>
-                  <th className="text-center">Status</th>
-                  <th className="text-center">Time Limit</th>
-                  <th>Created</th>
-                  <th>Started</th>
-                  <th>Submitted</th>
-                  <th className="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedSessions.map((session, idx) => (
-                  <tr
-                    key={session.session_id}
-                    className={`session-row ${idx % 2 !== 0 ? "session-row-alt" : ""}`}
-                  >
-                    <td className="td-candidate">
-                      {session.candidate_name || "⏳ Pending"}
-                    </td>
-                    <td className="text-center">
-                      <span className={getStatusBadgeColor(session.state)}>
-                        {session.state}
-                      </span>
-                    </td>
-                    <td className="text-center td-muted">
-                      {session.time_limit_minutes} min
-                    </td>
-                    <td className="td-date">
-                      {new Date(session.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </td>
-                    <td className="td-date">
-                      {session.started_at ? new Date(session.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
-                    <td className="td-date">
-                      {session.submitted_at ? new Date(session.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
-                    <td className="td-actions">
-                      {session.state === "CREATED" && (
-                        <>
-                          <button className="action-btn action-btn-copy" onClick={() => copyToClipboard(session.invite_link)}>🔗 Copy</button>
-                          <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate</button>
-                        </>
-                      )}
-                      {(session.state === "COMPLETED" || session.state === "EVALUATED") && (
-                        <button className="action-btn action-btn-results" onClick={() => { sessionStorage.setItem(`user_type_${session.session_id}`, "hiring_manager"); navigate(`/results/${session.session_id}`); }}>📊 Results</button>
-                      )}
-                      {session.state === "IN_PROGRESS" && (
-                        <>
-                          <button className="action-btn action-btn-watch" onClick={() => navigate(`/guide/${session.session_id}?view_only=true`)}>👁️ Watch</button>
-                          <button className="action-btn action-btn-terminate" onClick={() => handleTerminateSession(session)} title="Terminate this session">🗑️ Terminate</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         ) : (
-          /* CARD VIEW */
           <div className="sessions-grid">
             {sortedSessions.map((session) => (
               <div key={session.session_id} className="session-card">
