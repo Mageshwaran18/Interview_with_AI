@@ -12,6 +12,9 @@ from app.routes.evaluation_routes import router as evaluation_router
 from app.routes.dashboard_routes import router as dashboard_router
 from app.routes.session_routes import router as session_router, router_sessions
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.routes.dsa_interview_routes import router as dsa_router
+
 import logging
 
 # Setup logging
@@ -58,6 +61,8 @@ app.add_middleware(
 
 # Include authentication routes
 app.include_router(auth_router)
+# Include DSA interview routes
+app.include_router(dsa_router)
 
 # Include chat routes (LLM Proxy - Phase 1)
 app.include_router(chat_router)

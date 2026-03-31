@@ -31,6 +31,9 @@ db = client[settings.DATABASE_NAME]
 # Collection is like a table in SQL
 users_collection = db["users"]
 
+dsa_sessions_collection = db["dsa_sessions"]
+
+
 # Access (or automatically create) the "sessions" collection
 # This stores every AI chat interaction (prompt, response, tokens)
 # This is the seed of the Interaction Trace Φ (Phase 2 will expand this)
@@ -63,6 +66,7 @@ judge_cache_collection = db["judge_cache"]
 # Tracks token usage per session to control API spending.
 # Documents: {session_id, tokens_total, tokens_used, usage_percentage, warning_triggered}
 token_budgets_collection = db["token_budgets"]
+
 
 
 # Database flow:
