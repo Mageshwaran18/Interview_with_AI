@@ -82,7 +82,7 @@ async def run_tests(session_id: str, code: str) -> dict:
     
     # Step 4: Log TEST_RUN event to Φ
     try:
-        await log_event(session_id, "TEST_RUN", {
+        log_event(session_id, "TEST_RUN", {
             "tests_total": test_results["tests_total"],
             "tests_passed": test_results["tests_passed"],
             "tests_failed": test_results["tests_failed"],

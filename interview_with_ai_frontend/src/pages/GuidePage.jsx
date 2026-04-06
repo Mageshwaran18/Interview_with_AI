@@ -196,7 +196,7 @@ function GuidePage() {
         timerRef.current = null;
       }
     };
-  }, [timeRemaining]); // Re-run when timeRemaining is first set from null
+  }, []); // Empty dependency array - timer runs only once per session
 
   // Timer warning: red when < 5 minutes
   const isTimerWarning = timeRemaining !== null && timeRemaining < 300;

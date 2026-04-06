@@ -18,7 +18,6 @@ Collections used: sessions, token_budgets, session_groups
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import secrets
-import asyncio
 import re
 import os
 
@@ -129,6 +128,13 @@ class SessionService:
         Accepts optional group / window metadata for bulk creation.
         """
         session_id = SessionService.generate_session_id()
+        
+        # Print session window configuration set by hiring manager
+        if start_at and end_at:
+            print(f"\n🕐 HIRING MANAGER SESSION WINDOW CONFIGURED:")
+            print(f"   Start Date & Time: {start_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            print(f"   End Date & Time:   {end_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            print(f"   Session ID: {session_id}\n")
 
         session_doc = {
             "session_id": session_id,
@@ -209,6 +215,12 @@ class SessionService:
         Candidate enters their name and starts working.
         Transitions session from CREATED → IN_PROGRESS.
         """
+        # Print when candidate enters the session
+        print(f"\n✅ CANDIDATE ENTERED SESSION:")
+        print(f"   Candidate Name: {request.candidate_name}")
+        print(f"   Session ID: {request.session_id}")
+        print(f"   Entry Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        
         doc = sessions_collection.find_one({"session_id": request.session_id})
 
         if not doc:
@@ -241,25 +253,14 @@ class SessionService:
 
         from app.services.event_service import log_event
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(log_event(
-                    session_id=request.session_id,
-                    event_type="SESSION_START",
-                    payload={
-                        "candidate_name": request.candidate_name,
-                        "time_limit_minutes": doc["time_limit_minutes"],
-                    },
-                ))
-            else:
-                loop.run_until_complete(log_event(
-                    session_id=request.session_id,
-                    event_type="SESSION_START",
-                    payload={
-                        "candidate_name": request.candidate_name,
-                        "time_limit_minutes": doc["time_limit_minutes"],
-                    },
-                ))
+            log_event(
+                session_id=request.session_id,
+                event_type="SESSION_START",
+                payload={
+                    "candidate_name": request.candidate_name,
+                    "time_limit_minutes": doc["time_limit_minutes"],
+                },
+            )
         except Exception as e:
             print(f"Warning: Failed to log SESSION_START event: {e}")
 
@@ -310,30 +311,23 @@ class SessionService:
 
         from app.services.event_service import log_event
         session_start = doc.get("started_at")
+        
+        # Ensure both datetimes have matching timezone awareness for subtraction
+        if session_start and session_start.tzinfo is None:
+            session_start = session_start.replace(tzinfo=tz)
+        
         total_duration = (now - session_start).total_seconds() if session_start else 0
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(log_event(
-                    session_id=session_id,
-                    event_type="SESSION_END",
-                    payload={
-                        "reason": reason,
-                        "total_duration_seconds": total_duration,
-                        "final_code_snapshot": final_code_snapshot,
-                    },
-                ))
-            else:
-                loop.run_until_complete(log_event(
-                    session_id=session_id,
-                    event_type="SESSION_END",
-                    payload={
-                        "reason": reason,
-                        "total_duration_seconds": total_duration,
-                        "final_code_snapshot": final_code_snapshot,
-                    },
-                ))
+            log_event(
+                session_id=session_id,
+                event_type="SESSION_END",
+                payload={
+                    "reason": reason,
+                    "total_duration_seconds": total_duration,
+                    "final_code_snapshot": final_code_snapshot,
+                },
+            )
         except Exception as e:
             print(f"Warning: Failed to log SESSION_END event: {e}")
 

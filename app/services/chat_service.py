@@ -159,11 +159,11 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
     # ── Step 3: Log PROMPT + RESPONSE events to Φ (Phase 2) ──
     # This is the structured Interaction Trace that the Evaluation Engine reads
     try:
-        await log_event(session_id, "PROMPT", {
+        log_event(session_id, "PROMPT", {
             "prompt_text": prompt,
             "token_in": token_count.get("prompt_tokens", 0) if token_count else 0,
         })
-        await log_event(session_id, "RESPONSE", {
+        log_event(session_id, "RESPONSE", {
             "response_text": ai_response_text,
             "token_out": token_count.get("response_tokens", 0) if token_count else 0,
             "source": source,

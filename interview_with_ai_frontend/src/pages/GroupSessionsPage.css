@@ -396,3 +396,67 @@
   background: linear-gradient(135deg, #4a4a6c, #5a5a8c);
   transform: translateY(-1px);
 }
+
+/* ─── Timezone Conversion Preview ───── */
+.gs-timezone-preview {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.gs-timezone-preview h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #60a5fa;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gs-tz-note {
+  font-size: 0.82rem;
+  color: rgba(232, 232, 240, 0.6);
+  margin: 0 0 10px 0;
+}
+
+.gs-tz-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gs-tz-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  border-left: 3px solid #60a5fa;
+}
+
+.gs-tz-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #93c5fd;
+}
+
+.gs-tz-value {
+  font-size: 0.85rem;
+  color: #e8e8f0;
+  font-family: 'Monaco', 'Courier New', monospace;
+  word-break: break-word;
+}
+
+.gs-tz-info {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(99, 165, 250, 0.7);
+  margin-top: 8px;
+}

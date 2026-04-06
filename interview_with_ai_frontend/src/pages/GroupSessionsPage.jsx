@@ -42,13 +42,94 @@ function parseCSV(text) {
 }
 
 // ─── Date/time helpers ────────────────────────────────────────────────────────
-function getDefaultStart() {
-  const now = new Date();
-  return now.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+
+// Generate list of available dates (today + next 30 days)
+function getAvailableDates() {
+  const dates = [];
+  const today = new Date();
+  for (let i = 0; i < 31; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    dates.push(dateStr);
+  }
+  return dates;
 }
-function getDefaultEnd() {
+
+// Convert "HH:MM AM/PM" to 24-hour "HH:MM" format
+function time12to24(time12) {
+  const [time, period] = time12.trim().split(/\s+/);
+  if (!time || !period) return "";
+  const [hours, minutes] = time.split(":");
+  let h = parseInt(hours, 10);
+  const m = minutes || "00";
+  
+  if (period.toUpperCase() === "AM") {
+    if (h === 12) h = 0;
+  } else if (period.toUpperCase() === "PM") {
+    if (h !== 12) h += 12;
+  }
+  return `${String(h).padStart(2, '0')}:${m}`;
+}
+
+// Convert "HH:MM" (24-hour) to "HH:MM AM/PM" format
+function time24to12(time24) {
+  const [hours, minutes] = time24.split(":");
+  let h = parseInt(hours, 10);
+  const m = minutes || "00";
+  const period = h >= 12 ? "PM" : "AM";
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${String(h).padStart(2, '0')}:${m} ${period}`;
+}
+
+// Combine date (YYYY-MM-DD) and time (HH:MM in 24-hour format) into ISO string
+// Store time exactly as entered by user (no timezone conversion)
+// Assumption: User is in IST and candidate is also in IST
+function dateTimeToISO(date, time) {
+  if (!date || !time) return new Date().toISOString();
+  
+  // Simply combine date and time without any timezone conversion
+  // The date is in YYYY-MM-DD format, time is in HH:MM format
+  // Create ISO string: YYYY-MM-DDTHH:MM:00
+  return new Date(`${date}T${time}:00`).toISOString();
+}
+
+// Convert ISO date string back to IST time for display (HH:MM AM/PM)
+function isoToIST(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  
+  // Add IST offset (5 hours 30 minutes) to convert from UTC to IST
+  const istDate = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+  
+  const h = String(istDate.getUTCHours()).padStart(2, '0');
+  const m = String(istDate.getUTCMinutes()).padStart(2, '0');
+  return time24to12(`${h}:${m}`);
+}
+
+function getDefaultStartDate() {
+  const now = new Date();
+  return now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+}
+
+function getDefaultStartTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  return time24to12(`${h}:${m}`); // "HH:MM AM/PM"
+}
+
+function getDefaultEndDate() {
   const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 16);
+  return d.toISOString().split('T')[0];
+}
+
+function getDefaultEndTime() {
+  const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return time24to12(`${h}:${m}`);
 }
 
 function GroupSessionsPage() {
@@ -59,8 +140,10 @@ function GroupSessionsPage() {
   const [groupName, setGroupName] = useState("");
   const [duration, setDuration] = useState(60);
   const [template, setTemplate] = useState("Library Management System");
-  const [startAt, setStartAt] = useState(getDefaultStart);
-  const [endAt, setEndAt] = useState(getDefaultEnd);
+  const [startDate, setStartDate] = useState(getDefaultStartDate);
+  const [startTime, setStartTime] = useState(getDefaultStartTime);
+  const [endDate, setEndDate] = useState(getDefaultEndDate);
+  const [endTime, setEndTime] = useState(getDefaultEndTime);
 
   // CSV state
   const [csvRows, setCsvRows] = useState([]);
@@ -119,8 +202,8 @@ function GroupSessionsPage() {
     group_name: groupName,
     time_limit_minutes: parseInt(duration),
     project_template: template,
-    start_at: new Date(startAt).toISOString(),
-    end_at: new Date(endAt).toISOString(),
+    start_at: dateTimeToISO(startDate, startTime),
+    end_at: dateTimeToISO(endDate, endTime),
     candidates: csvRows,
     dry_run: dryRun,
   });
@@ -129,7 +212,10 @@ function GroupSessionsPage() {
   const handleValidate = async () => {
     if (!groupName.trim()) { showToast("Group name is required.", "error"); return; }
     if (csvRows.length === 0) { showToast("Please upload a valid CSV first.", "error"); return; }
-    if (new Date(startAt) >= new Date(endAt)) {
+    
+    const startISO = dateTimeToISO(startDate, startTime);
+    const endISO = dateTimeToISO(endDate, endTime);
+    if (new Date(startISO) >= new Date(endISO)) {
       showToast("Start time must be before end time.", "error"); return;
     }
 
@@ -311,27 +397,55 @@ function GroupSessionsPage() {
 
               <div className="gs-row-fields">
                 <div className="gs-field-group">
-                  <label htmlFor="gs-start">Window Opens (IST)</label>
+                  <label htmlFor="gs-start-date">Window Opens (IST)</label>
                   <input
-                    id="gs-start"
-                    type="datetime-local"
-                    value={startAt}
-                    onChange={(e) => setStartAt(e.target.value)}
+                    id="gs-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                     className="gs-input"
                   />
-                  <small>Candidates can only enter after this time</small>
+                  <small>📅 Click to select date from calendar</small>
                 </div>
 
                 <div className="gs-field-group">
-                  <label htmlFor="gs-end">Window Closes (IST)</label>
+                  <label htmlFor="gs-start-time">Window Opens Time (IST)</label>
                   <input
-                    id="gs-end"
-                    type="datetime-local"
-                    value={endAt}
-                    onChange={(e) => setEndAt(e.target.value)}
+                    id="gs-start-time"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
                     className="gs-input"
                   />
-                  <small>Links expire after this time</small>
+                  <small>⏰ HH:MM format (24-hour)</small>
+                </div>
+              </div>
+
+
+
+              <div className="gs-row-fields">
+                <div className="gs-field-group">
+                  <label htmlFor="gs-end-date">Window Closes (IST)</label>
+                  <input
+                    id="gs-end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="gs-input"
+                  />
+                  <small>📅 Click to select date from calendar</small>
+                </div>
+
+                <div className="gs-field-group">
+                  <label htmlFor="gs-end-time">Window Closes Time (IST)</label>
+                  <input
+                    id="gs-end-time"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="gs-input"
+                  />
+                  <small>⏰ HH:MM format (24-hour)</small>
                 </div>
               </div>
             </div>

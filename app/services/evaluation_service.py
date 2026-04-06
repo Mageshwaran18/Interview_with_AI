@@ -267,6 +267,10 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         result = evaluations_collection.insert_one(eval_dict)
         logger.info(f"Evaluation stored with ID {result.inserted_id} for session {session_id}")
         
+        # Print the time at which scores were calculated
+        score_calculated_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+        print(f"📊 Scores calculated for session '{session_id}' at {score_calculated_time} | Composite Q Score: {composite_q:.2f}")
+        
         # Return the stored dict (MongoDB will add _id)
         eval_dict["_id"] = result.inserted_id
         return eval_dict

@@ -18,9 +18,10 @@ from app.database import events_collection
 #   2. Re-runnability — the Evaluation Engine can re-run on the same Φ
 
 
-async def log_event(session_id: str, event_type: str, payload: dict) -> dict:
+def log_event(session_id: str, event_type: str, payload: dict) -> dict:
     """
     Appends a single event to the Interaction Trace Φ.
+    This is a SYNCHRONOUS function that performs blocking MongoDB insert operations.
     
     This is the CORE function of the instrumentation layer.
     Every significant action during a session flows through here.
