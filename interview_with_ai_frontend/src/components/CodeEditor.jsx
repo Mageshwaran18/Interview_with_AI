@@ -24,42 +24,17 @@ import { sendEvent } from "../services/api";
 */
 
 // Starter template that appears when the editor first loads
-const STARTER_CODE = `# Library Management System
-# Start building your solution below
-from datetime import datetime, timedelta
+const STARTER_CODE = `# Simple Calculator - Interview With AI
+# Implement ONLY these 5 functions:
+#   add(a, b), subtract(a, b), multiply(a, b), divide(a, b), percent(a, b)
+#
+# Rules:
+# 1) For invalid inputs (string, None, bool), return "invalid"
+# 2) divide(a, b): if b == 0, return "inf"
+# 3) percent(a, b): if b == 0, return "inf"
+# 4) For valid inputs, return numeric result
 
-class Library:
-    def __init__(self):
-        self.books = {}
-        self.loans = {}
-
-    # Task 1 (Bug-Free): Book Management
-    def add_book(self, isbn, title, author, quantity):
-        """Add a book to the library"""
-        self.books[isbn] = {
-            'title': title,
-            'author': author,
-            'quantity': quantity,
-            'date_added': datetime.now(),
-        }
-        return {'success': True}
-
-    # Task 2: Overdue Detection
-    def get_overdue_loans(self):
-        """List all overdue loans (checked out >= 14 days and not returned)"""
-        overdue = []
-        now = datetime.now()
-
-        for loan in self.loans.values():
-            if not loan['returned']:
-                days_checked_out = (now - loan['checkout_date']).days
-                if days_checked_out > 14:
-                    overdue.append(loan)
-
-        return overdue
-
-    # TODO: Implement remaining requirements
-
+# Write your solution below
 `;
 
 function CodeEditor({ code, onCodeChange, sessionId, readOnly = false }) {

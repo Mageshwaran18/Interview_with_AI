@@ -121,7 +121,7 @@ function TestPanel({ sessionId, code, readOnly = false }) {
       if (!results) {
         try {
           console.log("🔄 Using backend test execution...");
-          const response = await fetch("/api/run-tests", {
+          const response = await fetch("/api/test-code", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

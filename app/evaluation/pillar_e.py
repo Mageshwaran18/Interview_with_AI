@@ -27,45 +27,58 @@ logger = logging.getLogger(__name__)
 
 async def compute_fc(session_id: str) -> dict:
     """
-    Functional Completeness: tests_passed / total_tests
-    from the FINAL test run of the session.
-
-    This is the ultimate measure — did the code actually work?
+    Functional Completeness: highest fc_score achieved across TEST_RUN events.
+    Uses best run (not last run) to avoid penalizing late regressions.
     """
-    # Get the last TEST_RUN event
-    last_test = events_collection.find_one(
-        {"session_id": session_id, "event_type": "TEST_RUN"},
-        sort=[("timestamp", -1)]
+    test_runs = list(
+        events_collection.find(
+            {"session_id": session_id, "event_type": "TEST_RUN"}
+        ).sort("timestamp", 1)
     )
 
-    if not last_test:
+    if not test_runs:
         return {
             "score": 0.0,
+            "fc_score": 0.0,
+            "fc_score_100": 0.0,
             "tests_passed": 0,
             "tests_total": 0,
-            "reasoning": "No test runs found — cannot measure completeness"
+            "best_run": None,
+            "total_runs": 0,
+            "expert_target": "> 0.85 (17+ of 20 tests passing)",
         }
 
-    payload = last_test.get("payload", {})
-    total = payload.get("tests_total", 0)
-    passed = payload.get("tests_passed", 0)
+    best_run = max(
+        test_runs,
+        key=lambda event: event.get("payload", {}).get("tests_passed", event.get("payload", {}).get("passed", 0)),
+    )
+    best_payload = best_run.get("payload", {})
 
-    if total == 0:
-        return {
-            "score": 0.0,
-            "tests_passed": 0,
-            "tests_total": 0,
-            "reasoning": "No tests executed in final run"
-        }
+    fc_score = best_payload.get("fc_score")
+    if fc_score is None:
+        passed = best_payload.get("tests_passed", best_payload.get("passed", 0))
+        total = best_payload.get("tests_total", best_payload.get("total", 0))
+        fc_score = round((passed / total), 4) if total else 0.0
+    else:
+        passed = best_payload.get("tests_passed", best_payload.get("passed", 0))
+        total = best_payload.get("tests_total", best_payload.get("total", 0))
 
-    fc = (passed / total) * 100
+    fc_score_100 = round(fc_score * 100, 2)
 
     return {
-        "score": round(fc, 1),
+        "score": fc_score_100,
+        "fc_score": fc_score,
+        "fc_score_100": fc_score_100,
         "tests_passed": passed,
         "tests_total": total,
-        "tests_failed": payload.get("tests_failed", 0),
-        "pass_rate": round(passed / total, 4),
+        "tests_failed": best_payload.get("tests_failed", best_payload.get("failed", max(total - passed, 0))),
+        "best_run": {
+            "passed": passed,
+            "total": total,
+            "timestamp": best_run.get("timestamp"),
+        },
+        "total_runs": len(test_runs),
+        "expert_target": "> 0.85 (17+ of 20 tests passing)",
     }
 
 

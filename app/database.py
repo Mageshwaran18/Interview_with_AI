@@ -5,23 +5,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create MongoDB client using URL from .env
-# This connects our FastAPI application to MongoDB server
+# Create MongoDB client using URL from .env.
+# Keep initialization lazy so app import does not crash if MongoDB is temporarily down.
+client = MongoClient(settings.MONGO_URL, serverSelectionTimeoutMS=5000)
+
+# Best-effort connection probe for useful startup logs.
 try:
-    client = MongoClient(settings.MONGO_URL, serverSelectionTimeoutMS=5000)
-    # Test the connection immediately
-    client.admin.command('ismaster')
+    client.admin.command("ping")
     logger.info("✅ MongoDB connection successful")
 except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-    logger.error(f"❌ MongoDB connection failed: {str(e)}")
-    logger.error("Please ensure MongoDB is running and MONGO_URL is correct in .env file")
-    raise RuntimeError(
-        f"Failed to connect to MongoDB at {settings.MONGO_URL}. "
-        "Please check that MongoDB is running and your connection string is correct."
-    ) from e
+    logger.warning(f"❌ MongoDB connection probe failed: {str(e)}")
+    logger.warning(
+        "Application started, but database operations will fail until MongoDB is reachable."
+    )
 except Exception as e:
-    logger.error(f"❌ Unexpected error connecting to MongoDB: {str(e)}")
-    raise RuntimeError(f"Unexpected error connecting to MongoDB: {str(e)}") from e
+    logger.warning(f"❌ Unexpected MongoDB probe error: {str(e)}")
 
 # Access (or automatically create) the database
 # If "interview_with_ai" does not exist, MongoDB will create it

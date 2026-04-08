@@ -1,3 +1,10 @@
 venv/
 .env
 __pycache__/
+
+# Local development MongoDB runtime/data directories
+.mongodb/
+.mongodb-data/
+
+# DB lock files
+*.lock

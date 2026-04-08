@@ -64,7 +64,7 @@ export const sendEvent = (sessionId, eventType, payload) => {
 // ─── Phase 2: Test Execution API ───
 // Sends candidate code to be tested against the pre-written test suite
 export const runTests = (sessionId, code) => {
-  return api.post("/api/run-tests", {
+  return api.post("/api/test-code", {
     session_id: sessionId,
     code: code,
   });

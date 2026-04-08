@@ -11,38 +11,47 @@ from app.services.test_service import run_tests
 # - How the "Run Tests" button connects to the backend
 
 
-router = APIRouter(prefix="/api", tags=["Tests"])
+router = APIRouter(tags=["Tests"])
 
 
-class TestRequest(BaseModel):
-    """Request body for running tests."""
+class TestCodeRequest(BaseModel):
+    """Request body for running the calculator test suite."""
     session_id: str
     code: str
 
 
-class TestResponse(BaseModel):
-    """Response with test execution results."""
+class TestCodeResponse(BaseModel):
+    """Structured response used by frontend and evaluation pipeline."""
     session_id: str
+    total: int
+    passed: int
+    failed: int
+    fc_score: float
+    results: list
+    error: str | None = None
     tests_total: int
     tests_passed: int
     tests_failed: int
     output_log: str
 
 
-@router.post("/run-tests", response_model=TestResponse)
-async def run_tests_endpoint(request: TestRequest):
+@router.post("/api/test-code", response_model=TestCodeResponse)
+async def test_code(request: TestCodeRequest):
     """
-    Execute the candidate's code against the pre-written test suite.
-    
-    The frontend sends the current code from the Monaco editor.
-    The backend runs pytest against it and returns the results.
-    This is also logged as a TEST_RUN event in the Interaction Trace Φ.
+    Execute the 20-case Simple Calculator test suite.
+    Called by the editor's "Run Tests" action.
     """
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty.")
+
     try:
-        result = await run_tests(
-            session_id=request.session_id,
-            code=request.code,
-        )
+        result = run_tests(code=request.code, session_id=request.session_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Test execution failed: {str(e)}")
+
+
+@router.post("/api/run-tests", response_model=TestCodeResponse)
+async def run_tests_endpoint(request: TestCodeRequest):
+    """Backward-compatible alias for older frontend clients."""
+    return await test_code(request)

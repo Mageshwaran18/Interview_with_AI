@@ -32,7 +32,7 @@ async def create_event(event: EventCreate):
     significant happens: code changes, test runs, session events.
     """
     try:
-        result = await log_event(
+        result = log_event(
             session_id=event.session_id,
             event_type=event.event_type,
             payload=event.payload,

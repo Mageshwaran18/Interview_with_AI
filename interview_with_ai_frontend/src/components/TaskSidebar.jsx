@@ -19,73 +19,39 @@ import { useState, useEffect } from "react";
 // Core requirements (5 essential tasks) with function detection patterns
 const REQUIREMENTS = [
   {
-    id: "book-mgmt",
-    title: "Book Management",
-    description: "Implement CRUD operations for books.",
-    functionsToDetect: [
-      { name: "add_book", label: "Add book function" },
-      { name: "delete_book", label: "Delete book function" },
-    ],
-    checkboxItems: [
-      "Add book function",
-      "Delete book function",
-      "Error handling",
-    ],
+    id: "req_1",
+    title: "Requirement 1: add()",
+    description: "Implement add(a, b). Return a + b for valid numeric inputs.",
+    functionsToDetect: [{ name: "add", label: "add()" }],
+    checkboxItems: ["add() implemented"],
   },
   {
-    id: "member-mgmt",
-    title: "Member Management",
-    description: "Register and manage library members.",
-    functionsToDetect: [
-      { name: "register_member", label: "Register member function" },
-      { name: "update_member", label: "Update member details" },
-    ],
-    checkboxItems: [
-      "Register member function",
-      "Update member details",
-      "Validation implemented",
-    ],
+    id: "req_2",
+    title: "Requirement 2: subtract()",
+    description: "Implement subtract(a, b). Return a - b for valid numeric inputs.",
+    functionsToDetect: [{ name: "subtract", label: "subtract()" }],
+    checkboxItems: ["subtract() implemented"],
   },
   {
-    id: "loan-tracking",
-    title: "Loan Tracking",
-    description: "Handle book checkout and returns.",
-    functionsToDetect: [
-      { name: "checkout_book", label: "Checkout function" },
-      { name: "return_book", label: "Return function" },
-    ],
-    checkboxItems: [
-      "Checkout function",
-      "Return function",
-      "3-book limit enforced",
-    ],
+    id: "req_3",
+    title: "Requirement 3: multiply()",
+    description: "Implement multiply(a, b). Return a * b for valid numeric inputs.",
+    functionsToDetect: [{ name: "multiply", label: "multiply()" }],
+    checkboxItems: ["multiply() implemented"],
   },
   {
-    id: "search",
-    title: "Search Functionality",
-    description: "Search books by title and author.",
-    functionsToDetect: [
-      { name: "search_by_title", label: "Search by title" },
-      { name: "search_by_author", label: "Search by author" },
-    ],
-    checkboxItems: [
-      "Search by title",
-      "Search by author",
-      "Partial match support",
-    ],
+    id: "req_4",
+    title: "Requirement 4: divide()",
+    description: "Implement divide(a, b). If b == 0, return 'inf'; otherwise return a / b.",
+    functionsToDetect: [{ name: "divide", label: "divide()" }],
+    checkboxItems: ["divide() implemented"],
   },
   {
-    id: "overdue-detection",
-    title: "Overdue Detection",
-    description: "Identify and track overdue books.",
-    functionsToDetect: [
-      { name: "get_overdue_loans", label: "Detect overdue loans" },
-    ],
-    checkboxItems: [
-      "Detect overdue loans",
-      "Calculate days overdue",
-      "Generate report",
-    ],
+    id: "req_5",
+    title: "Requirement 5: percent()",
+    description: "Implement percent(a, b). If b == 0, return 'inf'; otherwise return a % b.",
+    functionsToDetect: [{ name: "percent", label: "percent()" }],
+    checkboxItems: ["percent() implemented"],
   },
 ];
 
@@ -193,7 +159,7 @@ function TaskSidebar({ code = "" }) {
       {/* Header */}
       <div className="sidebar-header">
         <h2 className="sidebar-title">📋 Task Requirements</h2>
-        <p className="sidebar-subtitle">Library Management System</p>
+        <p className="sidebar-subtitle">Simple Calculator</p>
         <div className="progress-bar-container">
           <div
             className="progress-bar-fill"

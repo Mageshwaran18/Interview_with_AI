@@ -287,7 +287,7 @@ function GuidePage() {
           </button>
           <span className="topbar-logo">🎯 GUIDE</span>
           <span className="topbar-divider">|</span>
-          <span className="topbar-task">Library Management System</span>
+          <span className="topbar-task">Simple Calculator</span>
         </div>
         <div className="topbar-right">
           <span className="topbar-session">Session: {sessionId.slice(0, 20)}...</span>

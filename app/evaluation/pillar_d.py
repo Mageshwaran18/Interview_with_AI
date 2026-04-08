@@ -23,6 +23,14 @@ from datetime import datetime, timezone
 from app.database import events_collection
 
 
+SEEDED_BUGS = {
+    "TC-B01": "divide() must return 'inf' for zero divisor",
+    "TC-B02": "invalid inputs should consistently return 'invalid'",
+    "TC-B03": "percent() should use modulus behavior",
+}
+TOTAL_BUGS = len(SEEDED_BUGS)
+
+
 async def compute_tfr(session_id: str) -> dict:
     """
     Time-to-First-Run: Minutes between session start and the
@@ -67,103 +75,66 @@ async def compute_tfr(session_id: str) -> dict:
 
 async def compute_bdr(session_id: str) -> dict:
     """
-    Bug Detection Rate: Analyze CODE_SAVE diffs for patterns
-    that indicate bug fixes (error corrections, condition fixes,
-    return value changes, etc.).
+    Bug Detection Rate: what fraction of seeded bug probes was fixed.
 
-    For the prototype, this uses heuristic detection:
-    - Look for diff patterns that suggest corrections
-      (e.g., removing wrong logic, fixing conditions)
-    - Score based on proportion of saves that include fixes
-
-    ⚠️ Full implementation in Phase 5 will use seeded bugs in
-    the starter code and check if they were specifically fixed.
+    Strategy:
+    - Scan TEST_RUN events in chronological order.
+    - Read details.bug_probe_results from each run.
+    - For each probe ID (TC-B01/02/03), last status wins.
+    - Consider bug fixed when last status is PASS.
     """
-    code_saves = list(
+    test_runs = list(
         events_collection.find(
-            {"session_id": session_id, "event_type": "CODE_SAVE"}
+            {"session_id": session_id, "event_type": "TEST_RUN"}
         ).sort("timestamp", 1)
     )
 
-    if not code_saves:
+    if not test_runs:
         return {
             "score": 0.0,
-            "bugs_detected": 0,
-            "total_saves": 0,
-            "reasoning": "No code implementation — cannot assess bug detection"
+            "bugs_fixed": 0,
+            "bugs_total": TOTAL_BUGS,
+            "bdr_raw": 0.0,
+            "bdr_score": 0.0,
+            "per_bug": {
+                test_id: {
+                    "description": desc,
+                    "fixed": False,
+                    "last_status": "NOT_ATTEMPTED",
+                }
+                for test_id, desc in SEEDED_BUGS.items()
+            },
+            "reasoning": "No TEST_RUN events - candidate never ran bug probes",
         }
 
-    # Heuristic: look for correction patterns in diffs
-    bug_fix_indicators = [
-        "fix", "bug", "error", "correct", "wrong", "typo",
-        "was", "should be", "instead of",
-    ]
+    latest_bug_status = {}
+    for run in test_runs:
+        bug_results = run.get("payload", {}).get("bug_probe_results", {})
+        for test_id, status in bug_results.items():
+            if test_id in SEEDED_BUGS:
+                latest_bug_status[test_id] = status
 
-    # Also look for structural corrections in diff text
-    correction_patterns = [
-        "-    ",   # Lines removed (potential fix)
-        "+    if ", # Adding guard conditions
-        "+    raise", # Adding error handling
-        "+    return", # Adding missing returns
-        "+    except", # Adding exception handling
-    ]
-
-    saves_with_fixes = 0
-
-    for save in code_saves:
-        payload = save.get("payload", {})
-        diff_text = payload.get("diff_text", "").lower()
-
-        if not diff_text:
-            continue
-
-        is_fix = False
-
-        # Check for bug-fix keywords in diff
-        for indicator in bug_fix_indicators:
-            if indicator in diff_text:
-                is_fix = True
-                break
-
-        # Check for structural correction patterns
-        if not is_fix:
-            for pattern in correction_patterns:
-                if pattern.lower() in diff_text:
-                    is_fix = True
-                    break
-
-        if is_fix:
-            saves_with_fixes += 1
-
-    total_saves = len(code_saves)
-
-    if total_saves == 0:
-        return {
-            "score": 0.0,
-            "bugs_detected": 0,
-            "total_saves": 0,
-            "reasoning": "No code saves — no validation possible"
-        }
-
-    # A moderate fix rate is good — too many fixes might mean messy code
-    # Score via sweet spot: 10-30% of saves being fixes → 100
-    fix_rate = saves_with_fixes / total_saves
-
-    if 0.10 <= fix_rate <= 0.30:
-        score = 100.0
-    elif fix_rate < 0.10:
-        # Few fixes detected — could mean no bugs found or not fixing
-        score = max(30.0, 50.0 + fix_rate * 500)
-    else:
-        # Too many fixes — diminishing returns
-        score = max(40.0, 100.0 - (fix_rate - 0.30) * 100)
+    bugs_fixed = sum(
+        1 for test_id in SEEDED_BUGS if latest_bug_status.get(test_id) == "PASS"
+    )
+    bdr_raw = round(bugs_fixed / TOTAL_BUGS, 4) if TOTAL_BUGS > 0 else 0.0
+    bdr_score = round(bdr_raw * 100, 2)
 
     return {
-        "score": round(score, 1),
-        "bugs_detected": saves_with_fixes,
-        "total_saves": total_saves,
-        "fix_rate": round(fix_rate, 4),
-        "reasoning": "Heuristic detection — Phase 5 will use seeded bugs",
+        "score": bdr_score,
+        "bugs_fixed": bugs_fixed,
+        "bugs_total": TOTAL_BUGS,
+        "bdr_raw": bdr_raw,
+        "bdr_score": bdr_score,
+        "per_bug": {
+            test_id: {
+                "description": SEEDED_BUGS[test_id],
+                "fixed": latest_bug_status.get(test_id) == "PASS",
+                "last_status": latest_bug_status.get(test_id, "NOT_ATTEMPTED"),
+            }
+            for test_id in SEEDED_BUGS
+        },
+        "expert_target": "> 0.67 (at least 2 of 3 bugs fixed)",
     }
 
 
