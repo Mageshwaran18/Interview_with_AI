@@ -32,12 +32,12 @@ function CandidateOnboarding() {
   const [windowError, setWindowError] = useState(null); // { reason, start_at|end_at }
 
   const taskHighlights = [
-    "Book and member management",
-    "Checkout and returns with limits",
-    "Search by title or author",
-    "Overdue detection",
-    "Meaningful error handling",
-    "Ask AI for targeted help",
+    "Implement add(a, b)",
+    "Implement subtract(a, b)",
+    "Implement multiply(a, b)",
+    "Implement divide(a, b) with zero handling",
+    "Implement percent(a, b) with zero handling",
+    "Handle invalid inputs and ask AI for targeted help",
   ];
 
   const proTips = [
@@ -46,6 +46,11 @@ function CandidateOnboarding() {
     "Be specific with AI prompts",
     "Rough plan first, then implement",
   ];
+
+  const normalizedTemplate =
+    session?.project_template === "Library Management System"
+      ? "Simple Calculator"
+      : (session?.project_template || "Simple Calculator");
 
   // Fetch session details on component mount
   useEffect(() => {
@@ -202,7 +207,7 @@ function CandidateOnboarding() {
             </p>
             <div className="pill-row">
               <span className="pill">Duration: {session.time_limit_minutes} min</span>
-              <span className="pill pill-strong">{session.project_template || "Library Management System"}</span>
+              <span className="pill pill-strong">{normalizedTemplate}</span>
               {session.group_name && (
                 <span className="pill" style={{ background: "rgba(96,165,250,0.12)", color: "#60a5fa" }}>Group: {session.group_name}</span>
               )}
@@ -211,7 +216,7 @@ function CandidateOnboarding() {
           </div>
           <div className="hero-task">
             <div className="mini-label">Build scope</div>
-            <h3>Deliver a reliable library system</h3>
+            <h3>Deliver a reliable calculator utility</h3>
             <div className="task-points">
               {taskHighlights.map((item) => (
                 <div key={item} className="point">

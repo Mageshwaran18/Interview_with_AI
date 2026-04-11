@@ -11,6 +11,7 @@
         "/^cd /d d:\\\\Project\\\\Current\\\\Final_Year_Project\\\\Interview_with_AI\\\\interview_with_ai_frontend ; cmd /c \"npm run dev\"$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        ".gitignore": true
     }
 }

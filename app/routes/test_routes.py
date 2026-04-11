@@ -38,7 +38,7 @@ class TestCodeResponse(BaseModel):
 @router.post("/api/test-code", response_model=TestCodeResponse)
 async def test_code(request: TestCodeRequest):
     """
-    Execute the 20-case Simple Calculator test suite.
+    Execute the 20-case Library Management System test suite.
     Called by the editor's "Run Tests" action.
     """
     if not request.code.strip():

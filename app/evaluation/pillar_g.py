@@ -234,7 +234,7 @@ async def compute_dds(session_id: str) -> dict:
     prompt_texts = [p.get("payload", {}).get("prompt_text", "") for p in prompts]
     combined = "\n---\n".join(prompt_texts)
     
-    judge_prompt = f"""You are an evaluation judge for a coding assessment. The candidate was given a task to build a Library Management System with these subtasks:
+    judge_prompt = f"""You are an evaluation judge for a coding assessment. The candidate was given a task to build a Library Management Systemwith these subtasks:
 
 Reference subtasks: {', '.join(REFERENCE_DAG_NODES)}
 
@@ -258,7 +258,9 @@ Return ONLY a JSON object:
     dds = (nodes_found / len(REFERENCE_DAG_NODES)) * 100
     
     # Also factor in the judge's qualitative score
-    judge_score = result.get("score", 5.0)
+    judge_score = result.get("score")
+    if judge_score is None:
+        judge_score = 5.0
     # Blend: 60% node overlap + 40% judge qualitative
     final_score = (dds * 0.6) + (judge_score * 10 * 0.4)
     

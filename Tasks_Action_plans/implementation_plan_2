@@ -51,10 +51,10 @@ test_service.py
 Writes candidate code to a temp file
 Runs pytest via subprocess against a pre-written test suite
 Parses results: { tests_total, tests_passed, tests_failed, output_log }
-The pre-written test suite validates Library Management System requirements
+The pre-written test suite validates Library Management Systemrequirements
 [NEW] 
 tests/library_tests.py
-Pre-written pytest test suite against the Library Management System requirements (Book CRUD, Member CRUD, Loan Tracking, Search, Overdue, Error Handling)
+Pre-written pytest test suite against the Library Management Systemrequirements (Book CRUD, Member CRUD, Loan Tracking, Search, Overdue, Error Handling)
 
 [MODIFY] 
 database.py

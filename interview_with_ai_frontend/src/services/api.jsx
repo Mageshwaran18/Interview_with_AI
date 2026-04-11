@@ -50,6 +50,10 @@ export const sendChatMessage = (sessionId, prompt) => {
   });
 };
 
+export const getSessionById = (sessionId) => {
+  return api.get(`/api/sessions/${sessionId}`);
+};
+
 // ─── Phase 2: Event Logging API ───
 // Logs any event to the Interaction Trace Φ
 // Events: CODE_SAVE, TEST_RUN, SESSION_START, SESSION_END

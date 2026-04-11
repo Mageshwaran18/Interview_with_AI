@@ -50,7 +50,7 @@ http://localhost:5174/guide
 ```
 
 You should see:
-- **Left Panel:** Library Management System requirements with checkboxes
+- **Left Panel:** Library Management Systemrequirements with checkboxes
 - **Center Panel:** Monaco editor with Python syntax highlighting and starter template
 - **Right Panel:** Chat interface with "Hello! I'm your AI assistant..." greeting
 

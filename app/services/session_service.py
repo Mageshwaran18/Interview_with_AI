@@ -247,6 +247,14 @@ class SessionService:
                     "candidate_name": request.candidate_name,
                     "state": SessionState.IN_PROGRESS.value,
                     "started_at": now,
+                    "chat_policy": {
+                        "chat_enabled_at": now + timedelta(minutes=5),
+                        "last_chat_at": None,
+                        "violation_count": 0,
+                        "cooldown_seconds": 60,
+                        "lock_minutes": 5,
+                        "terminated_for_policy": False,
+                    },
                 }
             },
         )

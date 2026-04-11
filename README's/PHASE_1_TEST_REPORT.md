@@ -42,7 +42,7 @@ The Phase 1 implementation of the GUIDE project has been **successfully complete
 - [x] Monaco Editor library integrated (`@monaco-editor/react` v4.7.0)
 - [x] Python language support configured
 - [x] Dark theme (`vs-dark`) applied
-- [x] Starter template with Library Management System boilerplate
+- [x] Starter template with Library Management Systemboilerplate
 - [x] onChange handler to capture code edits
 - [x] onMount handler to store editor reference
 - [x] Configuration options:
@@ -339,7 +339,7 @@ interview_with_ai_frontend/src/
 #### Step 1.1 — Scaffold React Application ✅
 - [x] Dependencies installed: @monaco-editor/react, tailwindcss
 - [x] Three-panel layout created
-- [x] Library Management System requirements hard-coded
+- [x] Library Management Systemrequirements hard-coded
 - [x] TaskSidebar displaying all 6 requirements
 
 #### Step 1.2 — Embed Monaco Editor ✅

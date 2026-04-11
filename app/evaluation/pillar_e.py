@@ -17,12 +17,23 @@ Aggregate: E = 0.25×FC + 0.20×SS + 0.20×CQS + 0.15×DQ + 0.20×AC
 
 import re
 import json
+import sys
 import subprocess
 import logging
 from app.database import events_collection
 from app.evaluation.llm_judge import judge_with_voting
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_score(value, default=0.0) -> float:
+    """Normalize potentially missing/invalid score values to float."""
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
 
 
 async def compute_fc(session_id: str) -> dict:
@@ -325,7 +336,7 @@ async def compute_ac(session_id: str) -> dict:
     if len(code) > 8000:
         code = code[:8000] + "\n# ... (truncated for analysis)"
 
-    judge_prompt = f"""You are evaluating the architectural quality of a Python Library Management System implementation.
+    judge_prompt = f"""You are evaluating the architectural quality of a Python Library Management Systemimplementation.
 
 Code to evaluate:
 ```python
@@ -350,7 +361,7 @@ Return ONLY a JSON object:
 
     result = await judge_with_voting(judge_prompt)
 
-    judge_score = result.get("score", 5.0)
+    judge_score = _safe_score(result.get("score"), default=5.0)
     normalized = (judge_score / 10.0) * 100
 
     return {
@@ -417,15 +428,34 @@ async def compute_ss(session_id: str) -> dict:
             temp_path = f.name
         
         try:
-            # Run Bandit and capture JSON output
-            result = subprocess.run(
+            # Run Bandit with the active interpreter first to avoid PATH issues,
+            # then fallback to the plain executable for broader compatibility.
+            bandit_commands = [
+                [sys.executable, '-m', 'bandit', '-f', 'json', temp_path],
                 ['bandit', '-f', 'json', temp_path],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            output = json.loads(result.stdout)
+            ]
+
+            output = None
+            last_error = None
+
+            for cmd in bandit_commands:
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if result.stdout and result.stdout.strip():
+                        output = json.loads(result.stdout)
+                        break
+                    last_error = RuntimeError(result.stderr.strip() or "Bandit returned no JSON output")
+                except (FileNotFoundError, json.JSONDecodeError) as cmd_error:
+                    last_error = cmd_error
+
+            if output is None:
+                raise last_error or RuntimeError("Bandit command execution failed")
+
             results = output.get('results', [])
             
             # Count issues by severity
@@ -543,12 +573,18 @@ async def compute_e_score(session_id: str) -> dict:
     dq = await compute_dq(session_id)
     ac = await compute_ac(session_id)
 
+    fc_score = _safe_score(fc.get("score"))
+    ss_score = _safe_score(ss.get("score"))
+    cqs_score = _safe_score(cqs.get("score"))
+    dq_score = _safe_score(dq.get("score"))
+    ac_score = _safe_score(ac.get("score"))
+
     e_score = (
-        0.25 * fc["score"] +
-        0.20 * ss["score"] +
-        0.20 * cqs["score"] +
-        0.15 * dq["score"] +
-        0.20 * ac["score"]
+        0.25 * fc_score +
+        0.20 * ss_score +
+        0.20 * cqs_score +
+        0.15 * dq_score +
+        0.20 * ac_score
     )
 
     return {

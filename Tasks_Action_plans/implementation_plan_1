@@ -4,7 +4,7 @@
 
 Phase 1 is the **foundation** of the GUIDE platform. By the end of this phase, a candidate can:
 
-1. **See a task description** (Library Management System requirements) in a left sidebar
+1. **See a task description** (Library Management Systemrequirements) in a left sidebar
 2. **Write code** in a professional Monaco code editor (same editor used in VS Code!)
 3. **Chat with an AI** (Google Gemini) through a chat panel on the right
 
@@ -45,7 +45,7 @@ We need to install packages that don't exist yet in the project:
 
 The main 3-panel session page with:
 
-- **Left Sidebar** — Hard-coded Library Management System requirements as a checklist
+- **Left Sidebar** — Hard-coded Library Management Systemrequirements as a checklist
 - **Center Panel** — Monaco Editor (`<Editor>` component) configured for Python
 - **Right Panel** — AI Chat interface
 
@@ -163,7 +163,7 @@ Add: `GEMINI_API_KEY=your_gemini_api_key_here`
 2. **Start the frontend**: Run `npm run dev` from `interview_with_ai_frontend/`
 3. **Navigate to** `http://localhost:5173/guide` in the browser
 4. **Verify 3-panel layout**:
-   - Left sidebar shows Library Management System requirements
+   - Left sidebar shows Library Management Systemrequirements
    - Center shows Monaco code editor with dark theme
    - Right shows chat panel with input box
 5. **Test Monaco Editor**: Type Python code → verify syntax highlighting works

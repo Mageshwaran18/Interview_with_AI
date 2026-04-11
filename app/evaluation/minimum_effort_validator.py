@@ -7,7 +7,7 @@ affected pillar scores default to 0.
 
 MINIMUM THRESHOLDS (Professional Standards):
 - G (Goal): At least 1 prompt required (shows engagement)
-- U (Usage): At least 5 prompts required (shows multi-turn thinking)
+- U (Usage): At least 1 prompt required (shows at least minimal interaction)
 - I (Iteration): At least 2 test runs required (shows refinement attempts)
 - D (Detection): At least 1 test run required (validation is mandatory)
 - E (End Result): Evaluated only after other checks pass
@@ -71,10 +71,10 @@ async def validate_minimum_effort(session_id: str) -> dict:
         violations.append("G: No prompts sent (minimum 1 required)")
         penalties["G"] = {"zero_score": True, "reason": "No engagement with AI"}
     
-    # --- PILLAR U: At least 5 prompts for usage efficiency evaluation ---
-    if prompt_count < 5:
-        violations.append(f"U: Only {prompt_count} prompts (minimum 5 required for usage analysis)")
-        penalties["U"] = {"zero_score": True, "reason": "Insufficient multi-turn interaction"}
+    # --- PILLAR U: At least 1 prompt for usage efficiency evaluation ---
+    if prompt_count < 1:
+        violations.append(f"U: Only {prompt_count} prompts (minimum 1 required for usage analysis)")
+        penalties["U"] = {"zero_score": True, "reason": "No prompt usage evidence"}
     
     # --- PILLAR I: At least 2 test runs for iteration assessment ---
     test_count = count_events_by_type(session_id, "TEST_RUN")
@@ -159,7 +159,7 @@ def get_minimum_effort_report(session_id: str, validation_result: dict) -> dict:
         "violations": validation_result["violations"],
         "metrics": {
             "prompts_sent": validation_result["prompt_count"],
-            "prompts_required": 5,
+            "prompts_required": 1,
             "test_runs": validation_result["test_count"],
             "test_runs_required": 2,
             "code_saves": validation_result["code_save_count"],

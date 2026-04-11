@@ -46,7 +46,7 @@ function HiringManagerDashboard() {
   const [filterState, setFilterState] = useState("ALL"); // Filter by state
   const [sortBy, setSortBy] = useState("created_asc"); // Sort option
   const [notification, setNotification] = useState(null); // Notification system
-  const [projectTemplate, setProjectTemplate] = useState("Library Management System");
+  const [projectTemplate, setProjectTemplate] = useState("Simple Calculator");
 
   // Save sessions to localStorage whenever they change
   useEffect(() => {
@@ -291,7 +291,7 @@ function HiringManagerDashboard() {
                   value={projectTemplate}
                   onChange={(e) => setProjectTemplate(e.target.value)}
                 >
-                  <option value="Library Management System">Library Management System</option>
+                  <option value="Simple Calculator">Simple Calculator</option>
                   <option value="Hotel Booking System ( beta )">Hotel Booking System ( beta )</option>
                 </select>
                 <small>Select the starter project context for the session</small>

@@ -35,7 +35,7 @@
 - Responsive design using CSS Grid (breakpoints for mobile)
 
 ✅ **Task Requirements Display**
-- Hard-code Library Management System requirements:
+- Hard-code Library Management Systemrequirements:
   - Book Management (CRUD operations)
   - Member Registration & Management
   - Loan Tracking (checkout/return)
@@ -115,7 +115,7 @@
 ✅ **LLM Proxy Endpoint (/api/chat)**
 - Accept POST request: `{ session_id, prompt }`
 - Forward prompt to Gemini API / OpenAI API
-- Include system prompt: "You are an AI coding assistant helping a candidate solve a Library Management System task. Be concise, practical, and guide toward independent problem-solving."
+- Include system prompt: "You are an AI coding assistant helping a candidate solve a Library Management Systemtask. Be concise, practical, and guide toward independent problem-solving."
 - Return: `{ session_id, response, tokens_in, tokens_out }`
 
 ✅ **Session & Chat Service (services/chat_service.py)**

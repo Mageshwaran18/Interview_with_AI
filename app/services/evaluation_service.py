@@ -9,6 +9,7 @@ Phase 5.4 Enhancement: Partial Evaluation Handling
 - Ensures composite Q score is still meaningful
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
@@ -26,6 +27,10 @@ from app.evaluation.minimum_effort_validator import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Prevent overlapping evaluations for the same session in this process.
+_active_evaluations = set()
+_active_evaluations_lock = asyncio.Lock()
 
 # Composite Q score weights
 WEIGHTS = {
@@ -88,7 +93,26 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
     Returns:
         Complete evaluation result dict, or None if evaluation completely fails
     """
+    registered_session = False
     try:
+        # Duplicate trigger guard: return existing result when possible.
+        async with _active_evaluations_lock:
+            is_duplicate_trigger = session_id in _active_evaluations
+            if not is_duplicate_trigger:
+                _active_evaluations.add(session_id)
+                registered_session = True
+
+        if is_duplicate_trigger:
+            logger.info(f"Evaluation already running for session {session_id}")
+            existing = await get_evaluation(session_id)
+            if existing:
+                return existing
+            return {
+                "_status": "in_progress",
+                "session_id": session_id,
+                "message": "Evaluation already in progress"
+            }
+
         logger.info(f"Starting evaluation for session {session_id}")
         
         # Get all events for this session
@@ -133,8 +157,16 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
                 logger.info(f"Computing pillar {pillar_id} ({pillar_name})")
                 result = await compute_func(session_id)
                 pillar_results[pillar_id] = result
-                pillar_available[pillar_id] = True
-                logger.info(f"✅ Pillar {pillar_id} computed successfully")
+                has_numeric_score = isinstance(result.get("score"), (int, float))
+                pillar_available[pillar_id] = has_numeric_score
+                if has_numeric_score:
+                    logger.info(f"✅ Pillar {pillar_id} computed successfully")
+                else:
+                    pillar_results[pillar_id]["error"] = pillar_results[pillar_id].get(
+                        "error",
+                        "Pillar returned no numeric score"
+                    )
+                    logger.warning(f"❌ Pillar {pillar_id} returned no numeric score")
             except Exception as e:
                 logger.warning(f"❌ Pillar {pillar_id} computation failed: {e}")
                 pillar_results[pillar_id] = {"score": None, "sub_metrics": {}, "error": str(e)}
@@ -152,6 +184,14 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
         # Helper function to convert pillar result to PillarScore
         def make_pillar_score(pillar_dict, pillar_id, pillar_name, weight):
             """Convert a pillar computation result dict to a PillarScore object."""
+            def to_safe_float(value, default=0.0):
+                if value is None:
+                    return float(default)
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    return float(default)
+
             sub_metrics_raw = pillar_dict.get("sub_metrics", {})
             sub_metrics = []
             
@@ -159,7 +199,7 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
             if isinstance(sub_metrics_raw, dict):
                 for metric_name, metric_data in sub_metrics_raw.items():
                     if isinstance(metric_data, dict):
-                        score = metric_data.get("score", 50.0)
+                        score = to_safe_float(metric_data.get("score"), 0.0)
                         sub_metrics.append(SubMetricScore(
                             name=metric_name,
                             value=score,
@@ -168,16 +208,17 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
                     elif isinstance(metric_data, (int, float)):
                         sub_metrics.append(SubMetricScore(
                             name=metric_name,
-                            value=metric_data
+                            value=to_safe_float(metric_data, 0.0)
                         ))
             
             # Mark as unavailable if score is None
-            is_available = pillar_dict.get("score") is not None
+            raw_score = pillar_dict.get("score")
+            is_available = isinstance(raw_score, (int, float)) and pillar_dict.get("error") is None
             
             return PillarScore(
                 pillar_id=pillar_id,
                 pillar_name=pillar_name,
-                score=pillar_dict.get("score", 50.0),
+                score=to_safe_float(raw_score, 0.0),
                 weight=weight,
                 sub_metrics=sub_metrics,
                 available=is_available,
@@ -278,6 +319,10 @@ async def run_evaluation(session_id: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Evaluation failed for session {session_id}: {e}", exc_info=True)
         return None
+    finally:
+        if registered_session:
+            async with _active_evaluations_lock:
+                _active_evaluations.discard(session_id)
 
 
 async def get_evaluation(session_id: str) -> Optional[Dict[str, Any]]:

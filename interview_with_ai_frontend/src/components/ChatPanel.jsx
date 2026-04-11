@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { sendChatMessage, sendEvent } from "../services/api";
+import { sendChatMessage, getSessionById } from "../services/api";
 import TokenBudgetIndicator from "./TokenBudgetIndicator";
 import "./ChatPanel.css";
 
@@ -39,6 +39,9 @@ function ChatPanel({ sessionId, readOnly = false }) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [chatLockedSeconds, setChatLockedSeconds] = useState(0);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [policyTerminated, setPolicyTerminated] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -54,10 +57,45 @@ function ChatPanel({ sessionId, readOnly = false }) {
     }
   }, [messages, sessionId]);
 
+  useEffect(() => {
+    const loadChatLock = async () => {
+      try {
+        const response = await getSessionById(sessionId);
+        const startedAt = response?.data?.started_at;
+        if (!startedAt) return;
+
+        const unlockAt = new Date(new Date(startedAt).getTime() + 5 * 60 * 1000);
+        const waitMs = unlockAt.getTime() - Date.now();
+        if (waitMs > 0) {
+          setChatLockedSeconds(Math.ceil(waitMs / 1000));
+        }
+      } catch (error) {
+        console.warn("Failed to fetch session for chat lock countdown:", error);
+      }
+    };
+
+    loadChatLock();
+  }, [sessionId]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setChatLockedSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatCountdown = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
   const handleSend = async () => {
     if (readOnly) return;
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || policyTerminated || chatLockedSeconds > 0 || cooldownSeconds > 0) return;
 
     const userMessage = { role: "user", content: trimmed };
     setMessages((prev) => [...prev, userMessage]);
@@ -65,13 +103,34 @@ function ChatPanel({ sessionId, readOnly = false }) {
     setIsLoading(true);
 
     try {
-      const guardrails =
-        "SYSTEM: You are a strict code assistant. ONLY respond to programming, debugging, tests, API usage, algorithms, or architecture. Decline anything unrelated to code with a brief refusal.";
-      const guardedPrompt = `${guardrails}\n\nUser prompt:\n${trimmed}`;
-      const response = await sendChatMessage(sessionId, guardedPrompt);
+      const response = await sendChatMessage(sessionId, trimmed);
       const aiMessage = { role: "ai", content: response.data.response };
       setMessages((prev) => [...prev, aiMessage]);
+      setCooldownSeconds(60);
     } catch (error) {
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+
+      if (status === 423 || status === 429 || status === 403) {
+        const waitSeconds = Number(detail?.wait_seconds || 0);
+        if (status === 423 && waitSeconds > 0) {
+          setChatLockedSeconds(waitSeconds);
+        }
+        if (status === 429 && waitSeconds > 0) {
+          setCooldownSeconds(waitSeconds);
+        }
+        if (detail?.code === "CHAT_POLICY_TERMINATED") {
+          setPolicyTerminated(true);
+        }
+
+        const policyMessage = {
+          role: "ai",
+          content: detail?.message || "⚠️ Chat request blocked by policy.",
+        };
+        setMessages((prev) => [...prev, policyMessage]);
+        return;
+      }
+
       const errorMessage = {
         role: "ai",
         content: "⚠️ Sorry, I encountered an error. Please try again.",
@@ -90,6 +149,13 @@ function ChatPanel({ sessionId, readOnly = false }) {
       handleSend();
     }
   };
+
+  const isChatDisabled =
+    readOnly ||
+    policyTerminated ||
+    isLoading ||
+    chatLockedSeconds > 0 ||
+    cooldownSeconds > 0;
 
   const handleClearChat = () => {
     setShowClearConfirm(true);
@@ -162,6 +228,21 @@ function ChatPanel({ sessionId, readOnly = false }) {
           </div>
         ) : (
           <>
+            {policyTerminated && (
+              <div className="chat-readonly-notice">
+                ⛔ Session ended due to repeated direct-solution requests.
+              </div>
+            )}
+            {!policyTerminated && chatLockedSeconds > 0 && (
+              <div className="chat-readonly-notice">
+                🔒 Chat unlocks in {formatCountdown(chatLockedSeconds)}.
+              </div>
+            )}
+            {!policyTerminated && chatLockedSeconds === 0 && cooldownSeconds > 0 && (
+              <div className="chat-readonly-notice">
+                ⏳ Next chat message allowed in {formatCountdown(cooldownSeconds)}.
+              </div>
+            )}
             <textarea
               id="chat-message-input"
               name="chatMessage"
@@ -171,12 +252,12 @@ function ChatPanel({ sessionId, readOnly = false }) {
               onKeyDown={handleKeyDown}
               placeholder="Ask the AI for help..."
               rows={2}
-              disabled={isLoading}
+              disabled={isChatDisabled}
             />
             <button
               className="chat-send-btn"
               onClick={handleSend}
-              disabled={isLoading || !input.trim()}
+              disabled={isChatDisabled || !input.trim()}
             >
               {isLoading ? "⏳" : "🚀"}
             </button>

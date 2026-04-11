@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
  ─── TaskSidebar Component (Phase 2+ Update) ───
  
  📚 What this does:
- Displays the Library Management System requirements as a checklist.
+ Displays the Simple Calculator requirements as a checklist.
  NOW: Automatically detects which functions exist in the code editor!
  The candidate can see exactly what they need to build.
  

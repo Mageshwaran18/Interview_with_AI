@@ -5,7 +5,7 @@
 - [x] **Step 1.1 — Scaffold the React Application**
   - [x] Install new deps: `@monaco-editor/react`, `tailwindcss`
   - [x] Create three-panel layout: Left sidebar (task), Center (Monaco), Right (AI chat)
-  - [x] Hard-code Library Management System requirements in sidebar
+  - [x] Hard-code Library Management Systemrequirements in sidebar
 
 - [x] **Step 1.2 — Embed Monaco Editor**
   - [x] Mount `<Editor>` with Python language and dark theme

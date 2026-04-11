@@ -139,7 +139,7 @@ function GroupSessionsPage() {
   // Form state
   const [groupName, setGroupName] = useState("");
   const [duration, setDuration] = useState(60);
-  const [template, setTemplate] = useState("Library Management System");
+  const [template, setTemplate] = useState("Simple Calculator");
   const [startDate, setStartDate] = useState(getDefaultStartDate);
   const [startTime, setStartTime] = useState(getDefaultStartTime);
   const [endDate, setEndDate] = useState(getDefaultEndDate);
@@ -389,7 +389,7 @@ function GroupSessionsPage() {
                 <div className="gs-field-group">
                   <label htmlFor="gs-template">Project Template</label>
                   <select id="gs-template" value={template} onChange={(e) => setTemplate(e.target.value)} className="gs-select">
-                    <option>Library Management System</option>
+                    <option>Simple Calculator</option>
                     <option>Hotel Booking System ( beta )</option>
                   </select>
                 </div>

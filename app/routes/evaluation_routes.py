@@ -35,6 +35,9 @@ async def trigger_evaluation(session_id: str) -> EvaluationResponse:
         
         # Run evaluation
         result = await run_evaluation(session_id)
+
+        if result and result.get("_status") == "in_progress":
+            raise HTTPException(status_code=409, detail=result.get("message", "Evaluation already in progress"))
         
         if not result:
             logger.warning(f"Evaluation returned None for session {session_id}")
@@ -50,6 +53,8 @@ async def trigger_evaluation(session_id: str) -> EvaluationResponse:
             evaluation=result
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Evaluation trigger failed: {e}", exc_info=True)
         raise HTTPException(

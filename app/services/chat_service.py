@@ -1,5 +1,6 @@
 import google.generativeai as genai
 from datetime import datetime, timezone
+import re
 from app.config import settings
 from app.database import chat_logs_collection
 from app.services.event_service import log_event
@@ -14,6 +15,37 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 # ─── Create the Gemini Model Instance ───
 # Using gemini-2.0-flash which is faster and available
 model = genai.GenerativeModel("gemini-2.5-flash")
+
+
+SERVER_GUARDRAILS = """
+You are an interview coding assistant.
+Allowed help:
+- Explain errors, exceptions, syntax issues, and debugging steps.
+- Explain library/inbuilt function usage with concise examples.
+- Provide small targeted snippets (one idea at a time).
+Not allowed:
+- Full end-to-end solution.
+- Complete final code for all required functions.
+- Direct copy-paste answer dumps.
+If user requests full solution, refuse briefly and redirect to hints.
+""".strip()
+
+
+def _shape_response_for_policy(text: str) -> str:
+    """Best-effort safety shaping to avoid full-solution dumps."""
+    if not text:
+        return text
+
+    code_fence_count = text.count("```")
+    many_function_defs = len(re.findall(r"\ndef\s+\w+\s*\(", f"\n{text}")) >= 3
+    if code_fence_count >= 2 and many_function_defs:
+        return (
+            "I cannot provide a complete final solution. "
+            "I can help with one function at a time, debugging, syntax fixes, "
+            "or explain built-in/library usage with a small example."
+        )
+
+    return text
 
 
 # ─── Mock Response Generator ───
@@ -89,6 +121,8 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
         dict with 'response' text and 'session_id'
     """
     
+    guarded_prompt = f"{SERVER_GUARDRAILS}\n\nCandidate prompt:\n{prompt}"
+
     ai_response_text = None
     token_count = None
     source = "gemini"
@@ -97,7 +131,7 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
     try:
         # Wrap API call with exponential backoff retry (3 attempts: 1s, 2s, 4s)
         async def gemini_call():
-            return model.generate_content(prompt)
+            return model.generate_content(guarded_prompt)
         
         response = await retry_with_backoff(
             gemini_call,
@@ -137,6 +171,8 @@ async def chat_with_ai(session_id: str, prompt: str) -> dict:
             raise
     
     # ── Step 2: Log to MongoDB chat_logs_collection (dedicated chat storage) ──
+    ai_response_text = _shape_response_for_policy(ai_response_text)
+
     interaction_log = {
         "session_id": session_id,
         "timestamp": datetime.now(timezone.utc),

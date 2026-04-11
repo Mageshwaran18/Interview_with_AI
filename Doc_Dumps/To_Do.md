@@ -1,7 +1,7 @@
-# Simple Calculator — Task Design & Test Runner Implementation Guide
+# Library Management System — Task Design & Test Runner Implementation Guide
 
 **Project:** Interview With AI (GUIDE Platform)
-**Scope:** Replace Library Management System task with Simple Calculator
+**Scope:** Replace Library Management Systemtask with Library Management System
 **Touches:** `test_service.py`, `test_routes.py`, `TaskSidebar.jsx`,
 `GuidePage.jsx`, `pillar_d.py`, `pillar_e.py`
 
@@ -95,7 +95,7 @@ with the following seeded starter code. The three bugs are intentional —
 # starter_code (passed as defaultValue to Monaco Editor)
 
 STARTER_CODE = """
-# Simple Calculator — Interview With AI
+# Library Management System — Interview With AI
 # Complete the implementation below.
 # DO NOT change function signatures.
 
@@ -623,7 +623,7 @@ class TestCodeResponse(BaseModel):
 @router.post("/api/test-code", response_model=TestCodeResponse)
 async def test_code(request: TestCodeRequest):
     """
-    Execute the 20-case Simple Calculator test suite against
+    Execute the 20-case Library Management System test suite against
     the candidate's code. Called by CodeEditor.jsx's "Run Tests" button.
     """
     if not request.code.strip():

@@ -2444,3 +2444,209 @@ The system is production-ready, well-architected, and fully documented for futur
 **Project Repository:** `/Interview_with_AI/`  
 **Documentation Updated:** April 5, 2026  
 **Status:** ✅ Phase 5 Complete & Documented
+
+---
+
+## Appendix A - Latest Commit Analysis
+
+### Commit Metadata
+
+- **Commit Hash:** `14ee383ee247f2ad2c9ed60eeaf9aa1c11ca768f`
+- **Short Hash:** `14ee383`
+- **Author:** `prabhaM07`
+- **Date:** `Wed Apr 8 14:59:18 2026 +0530`
+- **Commit Message:** `The Calculatore task and requirements with respective test cases where running successfully`
+
+### Executive Summary
+
+This commit migrates the active interview task from **Library Management System** to an **Easy 5-Function Calculator** model and aligns backend execution, evaluation logic, and frontend UX around the new contract.
+
+In addition to task migration, the commit improves reliability in two critical areas:
+
+1. **Database startup resilience** by avoiding hard-fail on temporary MongoDB unavailability.
+2. **Evaluation fidelity** by improving how Functional Completeness and Bug Detection Rate are computed from test events.
+
+### Scope and Size
+
+- **Files changed:** 15
+- **New files:** 2
+- **Modified files:** 13
+- **Total additions:** 651
+- **Total deletions:** 666
+
+### File-Level Change Log
+
+| File | Change Type | Key Change | Impact |
+|------|-------------|------------|--------|
+| `.gitignore` | Modified | Ignored local MongoDB runtime/data folders and lock files | Cleaner local dev workflow and fewer accidental commits |
+| `answer_code.md` | Added | Added complete reference implementation for calculator task | Quick starter/validation artifact for candidates or QA |
+| `chat_constraint.md` | Added | Added detailed checklist for chat-policy constraints and rollout | Project governance and implementation planning support |
+| `app/database.py` | Modified | Replaced fail-fast DB boot with best-effort ping + warning logs | Backend can start even when MongoDB is temporarily offline |
+| `app/evaluation/pillar_d.py` | Modified | Reworked BDR to use seeded bug probes (`TC-B01/02/03`) from `TEST_RUN` events | More objective Detection & Validation scoring |
+| `app/evaluation/pillar_e.py` | Modified | FC now uses **best** test run (not strictly last run) and returns richer score payload | Reduces false penalty from late regressions; improves scoring stability |
+| `app/routes/event_routes.py` | Modified | Minor route-level adjustment (compatibility/cleanup) | Keeps event pipeline aligned with new flow |
+| `app/routes/test_routes.py` | Modified | Introduced primary endpoint `POST /api/test-code` + backward-compatible alias `POST /api/run-tests` | Cleaner API contract with no frontend breakage risk |
+| `app/services/test_service.py` | Modified | Replaced temp-file/pytest shell approach with in-process structured test case execution (sample, validation, bug-probe, regression sets) | Faster, deterministic test runs and richer telemetry for evaluation |
+| `interview_with_ai_frontend/src/components/CodeEditor.jsx` | Modified | Replaced starter code template with calculator specification | Candidate starts with correct task context |
+| `interview_with_ai_frontend/src/components/TaskSidebar.jsx` | Modified | Replaced LMS requirement checklist with 5 calculator function requirements | UI now tracks the active interview rubric correctly |
+| `interview_with_ai_frontend/src/components/TestPanel.jsx` | Modified | Updated test API call path to `/api/test-code` | Frontend test execution path aligned with backend contract |
+| `interview_with_ai_frontend/src/pages/GuidePage.jsx` | Modified | Updated top task label to calculator task | Guide page reflects active challenge context |
+| `interview_with_ai_frontend/src/services/api.jsx` | Modified | Updated `runTests` API helper to `/api/test-code` | Shared API layer consistency |
+| `interview_with_ai_frontend/src/services/testSuite.js` | Modified | Replaced LMS-oriented Pyodide suite with calculator-specific test logic | Client-side fallback testing now validates the correct problem |
+
+### Architectural and Behavioral Implications
+
+#### 1) Testing Contract Standardization
+
+The project now consistently targets five deterministic functions:
+
+- `add(a, b)`
+- `subtract(a, b)`
+- `multiply(a, b)`
+- `divide(a, b)`
+- `percent(a, b)`
+
+with explicit input and zero-division constraints. This substantially reduces ambiguity between candidate task, UI hints, and automated scoring.
+
+#### 2) Evaluation Robustness Improvements
+
+- **FC (Functional Completeness):** Best historical run wins, making evaluation resilient to temporary regressions.
+- **BDR (Bug Detection Rate):** Moves from heuristic save-diff inference to seeded-bug probe outcomes.
+
+Together, these shifts make the GUIDE evaluation less noisy and more evidence-driven.
+
+#### 3) Reliability at Startup
+
+Database initialization no longer aborts the whole process if MongoDB is down at boot time. This is operationally safer for local development and transient dependency outages.
+
+### Compatibility Notes
+
+- Existing clients posting to `/api/run-tests` remain supported through alias routing.
+- New and updated frontend modules now call `/api/test-code` as the primary contract.
+
+### Risks and Follow-up Recommendations
+
+1. **Documentation header lag:** The top header still states last update on April 5, 2026. Consider updating to April 9, 2026 for consistency.
+2. **Task references outside this commit:** Additional legacy “Library Management System” text in older markdown docs may still exist and should be normalized.
+3. **Regression coverage:** Run full backend + frontend test/lint suite after this migration to validate no path-specific regressions remain.
+
+### Validation Evidence Used for This Analysis
+
+- `git log -1` metadata inspection
+- `git show --numstat HEAD` quantitative change sizing
+- `git show --unified=2 HEAD -- <file>` behavioral diff review across backend and frontend task pipeline
+
+---
+
+## Appendix B - Working Tree Change Analysis (April 11, 2026)
+
+### Analysis Scope
+
+This appendix documents the **current local (uncommitted) repository changes** present in the working tree at analysis time.
+
+### Working Tree Summary
+
+- **Total changed files:** 32
+- **Diff size:** 431 insertions, 1721 deletions
+- **Changed types:** modified + deleted + newly created (untracked)
+
+### Untracked (New) Files
+
+1. `Doc_Dumps/DATE_TIME_PICKER_UPDATE_APRIL_5_2026.md`
+2. `Doc_Dumps/GUIDE_Builde_Plan.txt`
+3. `Doc_Dumps/GUIDE_EVALUATION.md`
+4. `Doc_Dumps/TIMEZONE_FIX_APRIL_5_2026.md`
+5. `Doc_Dumps/To_Do.md`
+6. `Doc_Dumps/chat_constraint.md`
+7. `Doc_Dumps/evaluation_fix.md`
+8. `app/services/chat_policy_service.py`
+
+### High-Impact Functional Changes
+
+#### 1) Chat Policy Enforcement (Backend + Frontend)
+
+**Backend enforcement added:**
+
+- New service: `app/services/chat_policy_service.py`
+- Route-level policy checks integrated in `app/routes/chat_routes.py`
+- Session policy state initialized in `app/services/session_service.py`
+- Response shaping and server guardrails added in `app/services/chat_service.py`
+
+**Frontend behavior updated:**
+
+- `interview_with_ai_frontend/src/components/ChatPanel.jsx` now handles:
+  - first-5-minute lock countdown,
+  - 60-second cooldown,
+  - policy warning and termination states.
+- `interview_with_ai_frontend/src/services/api.jsx` adds `getSessionById()` for lock timer bootstrap.
+
+**Impact:** Moves chat control from UI-only assumptions to backend-enforced policy, reducing bypass risk.
+
+#### 2) Evaluation Stability and Concurrency Hardening
+
+- `app/services/evaluation_service.py` introduces duplicate-trigger guarding (`_active_evaluations`) and stronger numeric safety for pillar/sub-metric assembly.
+- `app/routes/evaluation_routes.py` now returns **409 Conflict** when evaluation is already in progress.
+- `app/evaluation/pillar_u.py` and `app/evaluation/pillar_e.py` add safe score coercion helpers.
+- `app/evaluation/pillar_g.py` adds fallback handling for missing judge scores.
+- `app/evaluation/minimum_effort_validator.py` relaxes Usage threshold from **5 prompts** to **1 prompt**.
+
+**Impact:** Reduces crash-prone evaluation paths when scores are `None`, handles concurrent triggers more safely, and lowers false rejection risk on short interactions.
+
+#### 3) Security Tooling Availability
+
+- `requirements.txt` adds `bandit==1.8.3`.
+- `app/evaluation/pillar_e.py` updates Bandit execution to try `python -m bandit` first, then fallback to `bandit` binary.
+
+**Impact:** Improves reliability of security-score generation across environments where CLI PATH differs.
+
+### Product/Template Flow Adjustments
+
+- Default project template shifted to **Simple Calculator** in:
+  - `interview_with_ai_frontend/src/pages/GroupSessionsPage.jsx`
+  - `interview_with_ai_frontend/src/pages/HiringManagerDashboard.jsx`
+- Template normalization for legacy session values added in:
+  - `interview_with_ai_frontend/src/pages/GuidePage.jsx`
+  - `interview_with_ai_frontend/src/pages/CandidateOnboarding.jsx`
+
+**Impact:** Better backward compatibility for sessions still storing "Library Management System" while presenting calculator-first UX.
+
+### Documentation and File Organization Changes
+
+Several root markdown/txt files were deleted while corresponding copies were added under `Doc_Dumps/`, indicating an in-progress **documentation relocation** strategy.
+
+Observed patterns:
+
+- Root deletions: `DATE_TIME_PICKER_UPDATE_APRIL_5_2026.md`, `GUIDE_Builde_Plan.txt`, `GUIDE_EVALUATION.md`, `TIMEZONE_FIX_APRIL_5_2026.md`, `To_Do.md`, `chat_constraint.md`
+- New untracked copies under `Doc_Dumps/` with same or similar names
+
+**Impact:** Centralizes historical docs, but remains incomplete until additions are tracked/committed and root references are updated.
+
+### Notable Risks and Inconsistencies
+
+1. **String regression/formatting artifacts**
+  - Multiple docs now contain merged tokens like `Library Management Systemrequirements` (missing space), which reduces readability and can mislead users.
+
+2. **Task-label inconsistency in backend comment/docs**
+  - `app/routes/test_routes.py` docstring now states "Library Management System test suite" while current product direction in UI is "Simple Calculator".
+
+3. **Large documentation deletions not yet finalized**
+  - Because relocation files are still untracked, repository state currently appears as major deletions.
+
+4. **Line-ending normalization warnings (LF/CRLF)**
+  - Git warnings indicate potential noisy future diffs unless normalization strategy is clarified.
+
+### Recommended Follow-Up Actions
+
+1. Stage and commit all intended `Doc_Dumps/` additions to complete the relocation.
+2. Normalize task terminology across backend route docstrings and evaluation prompts.
+3. Run a quick repository-wide text fix for `Systemrequirements`-style token merges.
+4. Add/update `.gitattributes` if consistent LF/CRLF behavior is desired.
+5. Execute backend and frontend test passes after policy/evaluation changes.
+
+### Evidence Used
+
+- `git status --short`
+- `git diff --shortstat`
+- `git diff --name-status`
+- `git ls-files --others --exclude-standard`
+- Per-file unified diffs from current working tree

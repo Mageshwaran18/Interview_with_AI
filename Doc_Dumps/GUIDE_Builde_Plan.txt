@@ -20,7 +20,7 @@ Phase 5  Hardening & Session Management  (Week 8)  .....  10
 4.  Complete Metric Reference  .....  11
 5.  The Interaction Trace Φ — Deep Dive  .....  12
 6.  LLM-as-Judge Design  .....  13
-7.  Task Design: Library Management System  .....  14
+7.  Task Design: Library Management System .....  14
 8.  Key Risks & Mitigations  .....  15
 9.  Prototype Timeline Summary  .....  16
 10.  Beyond the Prototype: What Comes Next  .....  16
@@ -32,7 +32,7 @@ The core insight is this: when a candidate sits at a GUIDE session, they are giv
 
 1.1  Scope of This Prototype
 This document covers the prototype phase, targeting the SWE (Software Engineer) role exclusively. The prototype will be a single-tenant web application with the following boundaries:
-One fixed task: Library Management System (Python or JavaScript backend)
+One fixed task: Library Management System(Python or JavaScript backend)
 One LLM agent: Claude Sonnet or GPT-4o via API proxy
 One evaluator persona: Hiring Manager / Technical Recruiter
 Automated scoring for all deterministic metrics; LLM-as-Judge for qualitative ones
@@ -64,7 +64,7 @@ Step 1.1 — Scaffold the React Application
 Run: npm create vite@latest guide-client -- --template react-ts
 Install: @monaco-editor/react, axios, socket.io-client, tailwindcss
 Create three-panel layout: Left sidebar (task requirements), Center (Monaco Editor), Right (AI chat panel)
-Hard-code the task requirements for the Library Management System in the sidebar (Book CRUD, Member management, Loan tracking, Search, Overdue detection)
+Hard-code the task requirements for the Library Management Systemin the sidebar (Book CRUD, Member management, Loan tracking, Search, Overdue detection)
 
 Step 1.2 — Embed Monaco Editor
 Mount <Editor language='python' /> with defaultValue set to a starter template

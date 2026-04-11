@@ -18,6 +18,16 @@ from app.database import events_collection
 from app.evaluation.llm_judge import judge_with_voting
 
 
+def _safe_score(value, default=0.0) -> float:
+    """Normalize potentially missing/invalid score values to float."""
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
 async def compute_pss(session_id: str) -> dict:
     """
     Prompt Specificity Score: LLM-as-Judge rates each prompt
@@ -48,7 +58,7 @@ async def compute_pss(session_id: str) -> dict:
         if not prompt_text:
             continue
             
-        judge_prompt = f"""You are evaluating the quality of a prompt sent by a software engineer to an AI coding assistant during a Library Management System coding task.
+        judge_prompt = f"""You are evaluating the quality of a prompt sent by a software engineer to an AI coding assistant during a Library Management Systemcoding task.
 
 Prompt: "{prompt_text}"
 
@@ -67,7 +77,7 @@ Return ONLY a JSON object:
 {{"score_a": <1-10>, "score_b": <1-10>, "score_c": <1-10>, "score": <average of a,b,c>, "reasoning": "<brief>"}}"""
         
         result = await judge_with_voting(judge_prompt)
-        avg = result.get("score", 5.0)
+        avg = _safe_score(result.get("score"), default=5.0)
         total_score += avg
         evaluations.append({"prompt": prompt_text[:100], "score": avg})
     
@@ -312,12 +322,18 @@ async def compute_u_score(session_id: str) -> dict:
     rp = await compute_rp(session_id)
     ter = await compute_ter(session_id)
     
+    pss_score = _safe_score(pss.get("score"))
+    ppf_score = _safe_score(ppf.get("score"))
+    cir_score = _safe_score(cir.get("score"))
+    rp_score = _safe_score(rp.get("score"))
+    ter_score = _safe_score(ter.get("score"))
+
     u_score = (
-        0.25 * pss["score"] +
-        0.20 * ppf["score"] +
-        0.20 * cir["score"] +
-        0.20 * rp["score"] +
-        0.15 * ter["score"]
+        0.25 * pss_score +
+        0.20 * ppf_score +
+        0.20 * cir_score +
+        0.20 * rp_score +
+        0.15 * ter_score
     )
     
     return {

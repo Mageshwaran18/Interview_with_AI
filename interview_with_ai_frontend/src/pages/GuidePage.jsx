@@ -53,6 +53,10 @@ function GuidePage() {
   // ─── Panel Visibility State ───
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const normalizedTemplate =
+    session?.project_template === "Library Management System"
+      ? "Simple Calculator"
+      : (session?.project_template || "Simple Calculator");
   
   // Fetch session details on mount
   useEffect(() => {
@@ -287,7 +291,7 @@ function GuidePage() {
           </button>
           <span className="topbar-logo">🎯 GUIDE</span>
           <span className="topbar-divider">|</span>
-          <span className="topbar-task">Simple Calculator</span>
+          <span className="topbar-task">{normalizedTemplate}</span>
         </div>
         <div className="topbar-right">
           <span className="topbar-session">Session: {sessionId.slice(0, 20)}...</span>
